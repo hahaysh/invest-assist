@@ -1,0 +1,23 @@
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+!*.code-workspace
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+# 투자 비서 설정 (민감 정보 포함)
+config/secrets.env
+
+# 자동 생성 파일 (런타임)
+reports/daily/
+reports/weekly/
+logs/
+
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo

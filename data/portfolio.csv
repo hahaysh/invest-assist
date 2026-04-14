@@ -1,0 +1,12 @@
+ticker,company_name,market,holding_status,quantity,avg_cost,currency,target_weight,thesis,risk_notes,priority
+005930,삼성전자,KRX,HOLD,800,68500,KRW,0.14,HBM3E 수혜·파운드리 턴어라운드·밸류업 배당 확대,중국 경쟁심화·사이클 하강 시 실적 레버리지,1
+000660,SK하이닉스,KRX,HOLD,150,172000,KRW,0.10,HBM 독점적 공급·AI서버 수요 직결·FCF 개선,DRAM 가격 급락·고객 재고 조정 리스크,1
+005380,현대차,KRX,HOLD,100,215000,KRW,0.08,전기차 전환 중 내연기관 FCF 극대화·배당 확대,미국 관세 리스크·전기차 전환 비용 상승,2
+012330,현대모비스,KRX,HOLD,80,245000,KRW,0.06,현대차 전동화 부품 내재화 수혜·자사주 매입,전기차 침투 지연 시 성장 모멘텀 약화,2
+105560,KB금융,KRX,HOLD,200,68000,KRW,0.07,금리 환경 우호·ROE 개선·밸류업 정책 직수혜,부동산 PF 충당금 리스크·경기 둔화,2
+BRK.B,Berkshire Hathaway B,NYSE,HOLD,60,378.50,USD,0.10,자본배분 역량·현금 옵션성·보험 사업 복리,버핏 승계 불확실성·대형 M&A 없을 경우 성장 정체,1
+JPM,JPMorgan Chase,NYSE,HOLD,40,195.20,USD,0.08,미국 1위 은행·금리 수혜·자사주 매입 지속,경기침체 시 대손 비용 급증·규제 리스크,2
+UNH,UnitedHealth Group,NYSE,HOLD,20,520.00,USD,0.08,헬스케어 통합 플랫폼·가격결정력·FCF 우수,정부 정책 변화·메디케어 리프라이싱 리스크,1
+XOM,Exxon Mobil,NYSE,HOLD,70,108.40,USD,0.07,FCF 수익률 8%+·배당 성장 42년 연속·원가 경쟁력,유가 $60 이하 지속 시 배당 커버리지 위협,2
+GOOGL,Alphabet A,NASDAQ,HOLD,35,162.80,USD,0.08,광고+클라우드 복합 성장·FCF 마진 25%+·자사주 매입,AI 광고 대체 리스크·반독점 규제,1
+CASH,현금 (KRW+USD 합산),MIXED,CASH,0,0,KRW,0.14,기회 대기 및 리밸런싱 재원,,0
