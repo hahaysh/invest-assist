@@ -1,86 +1,212 @@
-# This workflow will build and push a Python application to an Azure Web App when a commit is pushed to your default branch.
-#
-# This workflow assumes you have already created the target Azure App Service web app.
-# For instructions see https://docs.microsoft.com/en-us/azure/app-service/quickstart-python?tabs=bash&pivots=python-framework-flask
-#
-# To configure this workflow:
-#
-# 1. Download the Publish Profile for your Azure Web App. You can download this file from the Overview page of your Web App in the Azure Portal.
-#    For more information: https://docs.microsoft.com/en-us/azure/app-service/deploy-github-actions?tabs=applevel#generate-deployment-credentials
-#
-# 2. Create a secret in your repository named AZURE_WEBAPP_PUBLISH_PROFILE, paste the publish profile contents as the value of the secret.
-#    For instructions on obtaining the publish profile see: https://docs.microsoft.com/azure/app-service/deploy-github-actions#configure-the-github-secret
-#
-# 3. Change the value for the AZURE_WEBAPP_NAME. Optionally, change the PYTHON_VERSION environment variables below.
-#
-# For more information on GitHub Actions for Azure: https://github.com/Azure/Actions
-# For more information on the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# For more samples to get started with GitHub Action workflows to deploy to Azure: https://github.com/Azure/actions-workflow-samples
+name: Deploy Webapp to Azure Linux VM
 
-name: Build and deploy Python app to Azure Web App
-
-env:
-  AZURE_WEBAPP_NAME: your-app-name  # set this to the name of your Azure Web App
-  PYTHON_VERSION: '3.8'              # set this to the Python version to use
-
-# on:
-#  push:
-#    branches: [ "main" ]
-#  workflow_dispatch:
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - webapp/**
+      - .github/workflows/azure-webapps-python.yml
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run checks and rsync dry-run only (no service restart)"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      rollback_on_failure:
+        description: "Rollback automatically when deployment fails"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 permissions:
   contents: read
 
+concurrency:
+  group: deploy-azure-linux-vm-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DEPLOY_TARGET_DIR: /home/hahaysh/webapp1/webapp
+  VENV_PYTHON: /home/hahaysh/webapp1/venv/bin/python
+  SERVICE_NAME: investment-webapp
+  APP_PORT: "8001"
+  BACKUP_RETENTION_DAYS: "7"
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python version
-        uses: actions/setup-python@v3.0.0
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      - name: Create and start virtual environment
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
-
-      - name: Upload artifact for deployment jobs
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-app
-          path: |
-            .
-            !venv/
-
   deploy:
-    permissions:
-      contents: none
     runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: 'Development'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    defaults:
+      run:
+        shell: bash
 
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: python-app
-          path: .
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+      - name: Validate required secrets
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.hahayshopenclawssh }}" ]; then
+            echo "Missing secret: hahayshopenclawssh"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DEPLOY_SSH_HOST }}" ]; then
+            echo "Missing secret: DEPLOY_SSH_HOST"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DEPLOY_SSH_USER }}" ]; then
+            echo "Missing secret: DEPLOY_SSH_USER"
+            exit 1
+          fi
+
+      - name: Prepare SSH key and known_hosts
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf "%s" "${{ secrets.hahayshopenclawssh }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: SSH connectivity check
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key \
+            "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" \
+            "echo SSH_OK"
+
+      - name: Set deployment metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          echo "backup_ts=$(date +%Y%m%d%H%M%S)" >> "$GITHUB_OUTPUT"
+
+      - name: Remote pre-checks
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
+            set -euo pipefail
+            mkdir -p "$DEPLOY_TARGET_DIR"
+            test -x "$VENV_PYTHON"
+            command -v rsync >/dev/null 2>&1 || true
+          '
+
+      - name: Backup current webapp
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
+            set -euo pipefail
+            BACKUP_DIR="$HOME/webapp-backups/webapp-${{ steps.meta.outputs.backup_ts }}"
+            mkdir -p "$HOME/webapp-backups"
+            if [ -d "$DEPLOY_TARGET_DIR" ]; then
+              cp -a "$DEPLOY_TARGET_DIR" "$BACKUP_DIR"
+            fi
+            echo "Backup dir: $BACKUP_DIR"
+          '
+
+      - name: Rsync dry-run
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
+        run: |
+          set -euo pipefail
+          rsync -azvn --delete \
+            --exclude="__pycache__/" \
+            --exclude="*.pyc" \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            ./webapp/ \
+            "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}:$DEPLOY_TARGET_DIR/"
+
+      - name: Rsync webapp to VM
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
+        run: |
+          set -euo pipefail
+          rsync -az --delete \
+            --exclude="__pycache__/" \
+            --exclude="*.pyc" \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            ./webapp/ \
+            "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}:$DEPLOY_TARGET_DIR/"
+
+      - name: Install Python dependencies
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
+            set -euo pipefail
+            cd "$DEPLOY_TARGET_DIR"
+            "$VENV_PYTHON" -m pip install --upgrade pip
+            "$VENV_PYTHON" -m pip install -r requirements.txt
+          '
+
+      - name: Restart service
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
+            set -euo pipefail
+            sudo systemctl restart "$SERVICE_NAME"
+            sudo systemctl is-active --quiet "$SERVICE_NAME"
+          '
+
+      - name: Health and API checks
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
+            set -euo pipefail
+            for attempt in $(seq 1 30); do
+              if curl -fsS "http://127.0.0.1:$APP_PORT/health" >/dev/null \
+                && curl -fsS "http://127.0.0.1:$APP_PORT/api/status" >/dev/null; then
+                echo "Health checks passed on attempt $attempt"
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "Health checks failed"
+            exit 1
+          '
+
+      - name: Rollback on failure
+        if: ${{ failure() && (github.event_name != 'workflow_dispatch' || github.event.inputs.rollback_on_failure == 'true') && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
+            set -euo pipefail
+            BACKUP_DIR="$HOME/webapp-backups/webapp-${{ steps.meta.outputs.backup_ts }}"
+            if [ ! -d "$BACKUP_DIR" ]; then
+              echo "Rollback backup not found: $BACKUP_DIR"
+              exit 1
+            fi
+            rm -rf "$DEPLOY_TARGET_DIR"
+            cp -a "$BACKUP_DIR" "$DEPLOY_TARGET_DIR"
+            cd "$DEPLOY_TARGET_DIR"
+            "$VENV_PYTHON" -m pip install -r requirements.txt
+            sudo systemctl restart "$SERVICE_NAME"
+            sudo systemctl is-active --quiet "$SERVICE_NAME"
+          '
+
+      - name: Service logs
+        if: ${{ always() }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
+            sudo journalctl -u "$SERVICE_NAME" -n 80 --no-pager || true
+          '
+
+      - name: Cleanup old backups
+        if: ${{ always() && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
+            set -euo pipefail
+            if [ -d "$HOME/webapp-backups" ]; then
+              find "$HOME/webapp-backups" -mindepth 1 -maxdepth 1 -type d -mtime +"$BACKUP_RETENTION_DAYS" -exec rm -rf {} +
+            fi
+          '
