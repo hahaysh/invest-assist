@@ -319,7 +319,7 @@
           </div>
 
           <div>
-            <label class="block text-xs text-slate-400">투자 논리</label>
+            <label class="block text-xs text-slate-400">투자논리</label>
             <textarea id="portfolioThesis" placeholder="투자 논리를 입력하세요" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
           </div>
 
@@ -558,7 +558,11 @@
 
         try {
           const data = await apiFetch(endpoint);
-          viewer.innerHTML = marked.parse(data.content || "");
+          const localizedContent = (data.content || "")
+            .replace(/\bThesis\b/g, "투자논리")
+            .replace(/\bWatchlist\b/g, "관심종목")
+            .replace(/\bwatchlist\b/g, "관심종목");
+          viewer.innerHTML = marked.parse(localizedContent);
           colorizeArrows(viewer);
           viewerMeta.textContent = type === "daily" ? `일일 브리핑: ${data.date}` : `주간 리포트: ${data.week}`;
         } catch (error) {
@@ -638,7 +642,7 @@
         }
       }
 
-      function fillPortfolioFromWatchlist() {
+      async function fillPortfolioFromWatchlist() {
         const select = document.getElementById("portfolioWatchlistSelect");
         const selectedOption = select.options[select.selectedIndex];
         
@@ -652,6 +656,8 @@
         const currency = selectedOption.dataset.currency || "KRW";
         const riskNotes = selectedOption.dataset.riskNotes || "";
         const priority = selectedOption.dataset.priority || "3";
+        const watchReason = selectedOption.dataset.watchReason || "";
+        const thesisField = document.getElementById("portfolioThesis");
 
         document.getElementById("portfolioTicker").value = ticker;
         document.getElementById("portfolioTicker").disabled = true;
@@ -660,6 +666,31 @@
         document.getElementById("portfolioCurrency").value = currency;
         document.getElementById("portfolioRiskNotes").value = riskNotes;
         document.getElementById("portfolioPriority").value = priority;
+
+        const thesisParts = [];
+        if (watchReason) {
+          thesisParts.push(`핵심 가설: ${watchReason}`);
+        }
+
+        try {
+          const enriched = await apiFetch(`/api/watchlist/enrich?ticker=${encodeURIComponent(ticker)}`);
+          if (enriched.news_summary) {
+            thesisParts.push(`뉴스 요약: ${enriched.news_summary}`);
+          }
+          if (enriched.trigger_condition) {
+            thesisParts.push(`진입 관찰 포인트: ${enriched.trigger_condition}`);
+          }
+          if (enriched.invalidation) {
+            thesisParts.push(`무효화 조건: ${enriched.invalidation}`);
+          }
+        } catch (error) {
+          // enrich 실패 시 기본 가설 문구로 계속 진행
+        }
+
+        if (!thesisParts.length) {
+          thesisParts.push(`${companyName || ticker}의 실적/모멘텀 개선을 확인하며 분할 진입을 검토한다.`);
+        }
+        thesisField.value = thesisParts.join(" | ");
 
         showToast(`${ticker} 정보가 자동으로 채워졌습니다 (관심종목 기반).`);
       }
