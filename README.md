@@ -66,29 +66,134 @@ investment-assistant/
 
 [troubleshooting.md](./openclaw/docs/troubleshooting.md) 참고
 
-## 🌐 웹앱(FastAPI) 배포 및 접속
+## 🌐 Azure Linux VM 웹앱 배포 가이드 (복사/붙여넣기)
+
+### 1) 배포 정보
 
 - 배포 위치: `/home/hahaysh/webapp1/webapp`
 - 서비스명: `investment-webapp` (systemd)
 - 실행 포트: `8001`
 - 운영 주소: `http://hahayshopenclaw.koreacentral.cloudapp.azure.com:8001/`
-- 웹앱은 `~/investment-assistant/data`, `~/investment-assistant/reports`를 참조
+- 웹앱 데이터 경로: `~/investment-assistant/data`, `~/investment-assistant/reports`
+
+### 2) 사전 준비
 
 ```bash
-# 서비스 상태 확인
-sudo systemctl status investment-webapp --no-pager
+mkdir -p ~/investment-assistant/data
+mkdir -p ~/investment-assistant/reports/daily
+mkdir -p ~/investment-assistant/reports/weekly
+```
 
-# 서비스 로그 확인
-sudo journalctl -u investment-webapp -n 100 --no-pager
+### 3) 소스 다운로드
 
-# 로컬 헬스체크
+```bash
+mkdir -p ~/webapp1
+cd ~/webapp1
+git clone https://github.com/hahaysh/invest-assist .
+```
+
+### 4) Python 가상환경 및 의존성 설치
+
+```bash
+cd ~/webapp1
+python3 -m venv venv
+source venv/bin/activate
+cd webapp
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 5) 수동 실행으로 1차 확인
+
+```bash
+cd ~/webapp1/webapp
+/home/hahaysh/webapp1/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8001
+```
+
+다른 SSH 세션에서 확인:
+
+```bash
 curl -s http://127.0.0.1:8001/health
 curl -s http://127.0.0.1:8001/api/status
 ```
 
-참고: UFW가 비활성(inactive)인 경우에도 Azure NSG 인바운드에서 TCP 8001 허용이 필요합니다.
+### 6) systemd 서비스 등록
 
-## ✅ 빠른 점검 체크리스트
+```bash
+sudo tee /etc/systemd/system/investment-webapp.service > /dev/null << 'EOF'
+[Unit]
+Description=Investment Assistant WebApp
+After=network.target
+
+[Service]
+Type=simple
+User=hahaysh
+Group=hahaysh
+WorkingDirectory=/home/hahaysh/webapp1/webapp
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/hahaysh/webapp1/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8001
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable investment-webapp
+sudo systemctl restart investment-webapp
+sudo systemctl status investment-webapp --no-pager
+```
+
+### 7) 네트워크 설정
+
+```bash
+sudo ufw allow 8001/tcp
+sudo ufw status
+```
+
+참고: UFW가 비활성(inactive)이어도 Azure NSG 인바운드에서 TCP 8001 허용이 필요합니다.
+
+### 8) 최종 확인
+
+```bash
+curl -s http://127.0.0.1:8001/health
+curl -s http://127.0.0.1:8001/api/status
+curl -s http://127.0.0.1:8001/api/portfolio
+curl -s http://127.0.0.1:8001/api/watchlist
+```
+
+브라우저 접속:
+
+- `http://hahayshopenclaw.koreacentral.cloudapp.azure.com:8001/`
+
+### 9) 운영 명령어
+
+```bash
+# 서비스 상태
+sudo systemctl status investment-webapp --no-pager
+
+# 서비스 로그
+sudo journalctl -u investment-webapp -n 100 --no-pager
+sudo journalctl -u investment-webapp -f
+
+# 서비스 재시작
+sudo systemctl restart investment-webapp
+```
+
+### 10) 코드 업데이트 배포(수동)
+
+```bash
+cd ~/webapp1
+git pull
+source venv/bin/activate
+cd webapp
+pip install -r requirements.txt
+sudo systemctl restart investment-webapp
+sudo systemctl status investment-webapp --no-pager
+```
+
+### ✅ 빠른 점검 체크리스트
 
 - 서비스 상태: `sudo systemctl status investment-webapp --no-pager` 에서 `active (running)` 확인
 - API 헬스체크: `curl -s http://127.0.0.1:8001/health` 응답이 `{"status":"ok"}` 인지 확인
