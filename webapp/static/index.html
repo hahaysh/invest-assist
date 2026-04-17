@@ -250,6 +250,13 @@
       <div class="modal-content">
         <h2 id="portfolioModalTitle" class="mb-4 text-xl font-semibold">종목 추가</h2>
         <form id="portfolioForm" class="space-y-3">
+          <div>
+            <label class="block text-xs text-slate-400">Watchlist에서 선택 (선택사항)</label>
+            <select id="portfolioWatchlistSelect" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100">
+              <option value="">— Watchlist에서 선택하면 자동 채워집니다 —</option>
+            </select>
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs text-slate-400">Ticker *</label>
@@ -601,6 +608,53 @@
       }
 
       // Portfolio Functions
+      async function populatePortfolioWatchlistSelect() {
+        const select = document.getElementById("portfolioWatchlistSelect");
+        try {
+          const rows = await apiFetch("/api/watchlist");
+          select.innerHTML = '<option value="">— Watchlist에서 선택하면 자동 채워집니다 —</option>';
+          rows.forEach((row) => {
+            const option = document.createElement("option");
+            option.value = row.ticker;
+            option.dataset.companyName = row.company_name;
+            option.dataset.market = row.market;
+            option.dataset.watchReason = row.watch_reason;
+            option.dataset.currency = row.currency || (row.market === "KRX" ? "KRW" : "USD");
+            option.dataset.riskNotes = row.risk_notes;
+            option.dataset.priority = row.priority;
+            option.textContent = `${row.ticker} - ${row.company_name}`;
+            select.appendChild(option);
+          });
+        } catch (error) {
+          console.error("Watchlist 로드 실패:", error);
+        }
+      }
+
+      function fillPortfolioFromWatchlist() {
+        const select = document.getElementById("portfolioWatchlistSelect");
+        const selectedOption = select.options[select.selectedIndex];
+        
+        if (!selectedOption.value) {
+          return;
+        }
+
+        const ticker = selectedOption.value;
+        const companyName = selectedOption.dataset.companyName || "";
+        const market = selectedOption.dataset.market || "KRX";
+        const currency = selectedOption.dataset.currency || "KRW";
+        const riskNotes = selectedOption.dataset.riskNotes || "";
+        const priority = selectedOption.dataset.priority || "3";
+
+        document.getElementById("portfolioTicker").value = ticker;
+        document.getElementById("portfolioTicker").disabled = true;
+        document.getElementById("portfolioCompanyName").value = companyName;
+        document.getElementById("portfolioMarket").value = market;
+        document.getElementById("portfolioCurrency").value = currency;
+        document.getElementById("portfolioRiskNotes").value = riskNotes;
+        document.getElementById("portfolioPriority").value = priority;
+
+        showToast(`${ticker} 정보가 자동으로 채워졌습니다.`);
+      }
       function openPortfolioModal(ticker = null) {
         state.portfolioEditTicker = ticker;
         document.getElementById("portfolioModalTitle").textContent = ticker ? "종목 수정" : "종목 추가";
@@ -628,6 +682,8 @@
         } else {
           document.getElementById("portfolioTicker").disabled = false;
           portfolioForm.reset();
+          document.getElementById("portfolioWatchlistSelect").value = "";
+          populatePortfolioWatchlistSelect();
         }
         
         portfolioModal.classList.add("active");
@@ -995,6 +1051,7 @@
       });
 
       document.getElementById("addPortfolioBtn").addEventListener("click", () => openPortfolioModal());
+      document.getElementById("portfolioWatchlistSelect").addEventListener("change", fillPortfolioFromWatchlist);
       document.getElementById("closePortfolioModal").addEventListener("click", closePortfolioModal);
       portfolioForm.addEventListener("submit", savePortfolio);
       portfolioModal.addEventListener("click", (e) => {
