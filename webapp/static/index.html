@@ -329,7 +329,7 @@
           </div>
 
           <div class="flex gap-3 pt-4">
-            <button type="submit" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">저장</button>
+            <button id="savePortfolioBtn" type="submit" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">저장</button>
             <button type="button" id="closePortfolioModal" class="flex-1 rounded-lg border border-slate-500 px-3 py-2 text-sm font-semibold hover:bg-slate-800">취소</button>
           </div>
         </form>
@@ -392,7 +392,7 @@
           </div>
 
           <div class="flex gap-3 pt-4">
-            <button type="submit" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">저장</button>
+            <button id="saveWatchlistBtn" type="submit" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">저장</button>
             <button type="button" id="closeWatchlistModal" class="flex-1 rounded-lg border border-slate-500 px-3 py-2 text-sm font-semibold hover:bg-slate-800">취소</button>
           </div>
         </form>
@@ -406,6 +406,7 @@
         dailyReports: [],
         weeklyReports: [],
         portfolioEditTicker: null,
+        portfolioAutofillLoading: false,
         watchlistEditTicker: null,
         watchlistAutofillLoading: false,
       };
@@ -422,6 +423,16 @@
       const portfolioForm = document.getElementById("portfolioForm");
       const watchlistModal = document.getElementById("watchlistModal");
       const watchlistForm = document.getElementById("watchlistForm");
+
+      function setPortfolioAutofillButtonsDisabled(disabled) {
+        document.getElementById("savePortfolioBtn").disabled = disabled;
+        document.getElementById("closePortfolioModal").disabled = disabled;
+      }
+
+      function setWatchlistAutofillButtonsDisabled(disabled) {
+        document.getElementById("saveWatchlistBtn").disabled = disabled;
+        document.getElementById("closeWatchlistModal").disabled = disabled;
+      }
 
       function showToast(message, isError = false) {
         toast.textContent = message;
@@ -659,40 +670,48 @@
         const watchReason = selectedOption.dataset.watchReason || "";
         const thesisField = document.getElementById("portfolioThesis");
 
-        document.getElementById("portfolioTicker").value = ticker;
-        document.getElementById("portfolioTicker").disabled = true;
-        document.getElementById("portfolioCompanyName").value = companyName;
-        document.getElementById("portfolioMarket").value = market;
-        document.getElementById("portfolioCurrency").value = currency;
-        document.getElementById("portfolioRiskNotes").value = riskNotes;
-        document.getElementById("portfolioPriority").value = priority;
-
-        const thesisParts = [];
-        if (watchReason) {
-          thesisParts.push(`핵심 가설: ${watchReason}`);
-        }
-
         try {
-          const enriched = await apiFetch(`/api/watchlist/enrich?ticker=${encodeURIComponent(ticker)}`);
-          if (enriched.news_summary) {
-            thesisParts.push(`뉴스 요약: ${enriched.news_summary}`);
-          }
-          if (enriched.trigger_condition) {
-            thesisParts.push(`진입 관찰 포인트: ${enriched.trigger_condition}`);
-          }
-          if (enriched.invalidation) {
-            thesisParts.push(`무효화 조건: ${enriched.invalidation}`);
-          }
-        } catch (error) {
-          // enrich 실패 시 기본 가설 문구로 계속 진행
-        }
+          state.portfolioAutofillLoading = true;
+          setPortfolioAutofillButtonsDisabled(true);
 
-        if (!thesisParts.length) {
-          thesisParts.push(`${companyName || ticker}의 실적/모멘텀 개선을 확인하며 분할 진입을 검토한다.`);
-        }
-        thesisField.value = thesisParts.join(" | ");
+          document.getElementById("portfolioTicker").value = ticker;
+          document.getElementById("portfolioTicker").disabled = true;
+          document.getElementById("portfolioCompanyName").value = companyName;
+          document.getElementById("portfolioMarket").value = market;
+          document.getElementById("portfolioCurrency").value = currency;
+          document.getElementById("portfolioRiskNotes").value = riskNotes;
+          document.getElementById("portfolioPriority").value = priority;
 
-        showToast(`${ticker} 정보가 자동으로 채워졌습니다 (관심종목 기반).`);
+          const thesisParts = [];
+          if (watchReason) {
+            thesisParts.push(`핵심 가설: ${watchReason}`);
+          }
+
+          try {
+            const enriched = await apiFetch(`/api/watchlist/enrich?ticker=${encodeURIComponent(ticker)}`);
+            if (enriched.news_summary) {
+              thesisParts.push(`뉴스 요약: ${enriched.news_summary}`);
+            }
+            if (enriched.trigger_condition) {
+              thesisParts.push(`진입 관찰 포인트: ${enriched.trigger_condition}`);
+            }
+            if (enriched.invalidation) {
+              thesisParts.push(`무효화 조건: ${enriched.invalidation}`);
+            }
+          } catch (error) {
+            // enrich 실패 시 기본 가설 문구로 계속 진행
+          }
+
+          if (!thesisParts.length) {
+            thesisParts.push(`${companyName || ticker}의 실적/모멘텀 개선을 확인하며 분할 진입을 검토한다.`);
+          }
+          thesisField.value = thesisParts.join(" | ");
+
+          showToast(`${ticker} 정보가 자동으로 채워졌습니다 (관심종목 기반).`);
+        } finally {
+          state.portfolioAutofillLoading = false;
+          setPortfolioAutofillButtonsDisabled(false);
+        }
       }
       function openPortfolioModal(ticker = null) {
         state.portfolioEditTicker = ticker;
@@ -729,6 +748,9 @@
       }
 
       function closePortfolioModal() {
+        if (state.portfolioAutofillLoading) {
+          return;
+        }
         portfolioModal.classList.remove("active");
         document.getElementById("portfolioTicker").disabled = false;
         portfolioForm.reset();
@@ -876,6 +898,7 @@
 
         try {
           state.watchlistAutofillLoading = true;
+          setWatchlistAutofillButtonsDisabled(true);
           title.textContent = `${originalTitle} (자동 채움 중...)`;
           tickerField.disabled = true;
           companyField.disabled = true;
@@ -907,6 +930,7 @@
           showToast(`자동 채움 실패: ${error.message}`, true);
         } finally {
           state.watchlistAutofillLoading = false;
+          setWatchlistAutofillButtonsDisabled(false);
           title.textContent = originalTitle;
           tickerField.disabled = false;
           companyField.disabled = false;
@@ -947,6 +971,9 @@
       }
 
       function closeWatchlistModal() {
+        if (state.watchlistAutofillLoading) {
+          return;
+        }
         watchlistModal.classList.remove("active");
         document.getElementById("watchlistTicker").disabled = false;
         document.getElementById("watchlistCompanyName").disabled = false;
@@ -1105,10 +1132,10 @@
       document.getElementById("closePortfolioModal").addEventListener("click", closePortfolioModal);
       portfolioForm.addEventListener("submit", savePortfolio);
       portfolioModal.addEventListener("click", (e) => {
-        if (e.target === portfolioModal) closePortfolioModal();
+        if (!state.portfolioAutofillLoading && e.target === portfolioModal) closePortfolioModal();
       });
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && portfolioModal.classList.contains("active")) closePortfolioModal();
+        if (e.key === "Escape" && portfolioModal.classList.contains("active") && !state.portfolioAutofillLoading) closePortfolioModal();
       });
 
       document.getElementById("addWatchlistBtn").addEventListener("click", () => openWatchlistModal());
@@ -1124,10 +1151,10 @@
         autofillWatchlistFields({ ticker, companyName });
       });
       watchlistModal.addEventListener("click", (e) => {
-        if (e.target === watchlistModal) closeWatchlistModal();
+        if (!state.watchlistAutofillLoading && e.target === watchlistModal) closeWatchlistModal();
       });
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && watchlistModal.classList.contains("active")) closeWatchlistModal();
+        if (e.key === "Escape" && watchlistModal.classList.contains("active") && !state.watchlistAutofillLoading) closeWatchlistModal();
       });
 
       setMainTab("dashboard");
