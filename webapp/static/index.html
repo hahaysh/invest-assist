@@ -135,7 +135,7 @@
           <nav class="grid grid-cols-3 gap-2 rounded-xl bg-slate-800/70 p-1">
             <button data-tab="dashboard" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold">대시보드</button>
             <button data-tab="portfolio" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold">포트폴리오</button>
-            <button data-tab="watchlist" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold">Watchlist</button>
+            <button data-tab="watchlist" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold">관심종목</button>
           </nav>
         </div>
       </header>
@@ -227,11 +227,11 @@
           </article>
         </section>
 
-        <!-- Watchlist Tab -->
+        <!-- 관심종목 Tab -->
         <section id="tab-watchlist" class="tab-panel hidden">
           <article class="rounded-2xl border border-slate-700 p-4 md:p-6" style="background-color: var(--card)">
             <div class="mb-4 flex items-center justify-between">
-              <h2 class="text-xl font-semibold">Watchlist</h2>
+              <h2 class="text-xl font-semibold">관심종목</h2>
               <button id="addWatchlistBtn" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">+ 종목 추가</button>
             </div>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -336,7 +336,7 @@
       </div>
     </div>
 
-    <!-- Watchlist Modal -->
+    <!-- 관심종목 Modal -->
     <div id="watchlistModal" class="modal">
       <div class="modal-content">
         <h2 id="watchlistModalTitle" class="mb-4 text-xl font-semibold">종목 추가</h2>
@@ -707,18 +707,29 @@
       async function savePortfolio(e) {
         e.preventDefault();
         const ticker = document.getElementById("portfolioTicker").value.toUpperCase().trim();
+
+        const quantity = Number(document.getElementById("portfolioQuantity").value);
+        const avgCost = Number(document.getElementById("portfolioAvgCost").value);
+        const targetWeight = Number(document.getElementById("portfolioTargetWeight").value);
+        const priority = Number(document.getElementById("portfolioPriority").value);
+
+        if (!Number.isInteger(quantity) || !Number.isInteger(priority) || Number.isNaN(avgCost) || Number.isNaN(targetWeight)) {
+          showToast("수량/우선순위는 정수, 평단가/목표 비중은 숫자로 입력해 주세요.", true);
+          return;
+        }
+
         const body = {
           ticker,
           company_name: document.getElementById("portfolioCompanyName").value,
           market: document.getElementById("portfolioMarket").value,
-          quantity: document.getElementById("portfolioQuantity").value,
-          avg_cost: document.getElementById("portfolioAvgCost").value,
+          quantity,
+          avg_cost: avgCost,
           currency: document.getElementById("portfolioCurrency").value,
-          target_weight: document.getElementById("portfolioTargetWeight").value,
+          target_weight: targetWeight,
           holding_status: document.getElementById("portfolioHoldingStatus").value,
           thesis: document.getElementById("portfolioThesis").value,
           risk_notes: document.getElementById("portfolioRiskNotes").value,
-          priority: document.getElementById("portfolioPriority").value,
+          priority,
         };
 
         try {
@@ -957,14 +968,14 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(body),
             });
-            showToast("Watchlist 수정 완료");
+            showToast("관심종목 수정 완료");
           } else {
             await apiFetch("/api/watchlist", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(body),
             });
-            showToast("Watchlist 추가 완료");
+            showToast("관심종목 추가 완료");
           }
           closeWatchlistModal();
           await loadWatchlist();
@@ -977,7 +988,7 @@
         if (!confirm(`${ticker}을(를) 삭제하시겠습니까?`)) return;
         try {
           await apiFetch(`/api/watchlist/${ticker}`, { method: "DELETE" });
-          showToast("Watchlist 삭제 완료");
+          showToast("관심종목 삭제 완료");
           await loadWatchlist();
         } catch (error) {
           showToast(error.message, true);
