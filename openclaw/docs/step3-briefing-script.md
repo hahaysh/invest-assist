@@ -98,7 +98,7 @@ for name in macro_tickers:
     lines.append(f"| {name} | {fmt(name)} |")
 lines.append("")
 
-lines.append("## 2. 보유 종목 현황\n")
+lines.append("## 2. 포트 폴리오 현황\n")
 lines.append("| 종목 | 현재가 | 등락 | Thesis | 리스크 |")
 lines.append("|------|--------|------|--------|--------|")
 for p in portfolio:
