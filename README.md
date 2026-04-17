@@ -20,8 +20,10 @@ investment-assistant/
 │   ├── skills/                 # OpenClaw 스킬 정의
 │   └── data-templates/         # 데이터 파일 템플릿
 ├── webapp/                     # 웹앱 소스코드
-│   ├── src/
-│   └── public/
+│   ├── main.py                 # FastAPI 엔트리
+│   ├── config.py               # 데이터/리포트 경로 설정
+│   ├── routers/                # API 라우터 (reports/portfolio/watchlist)
+│   └── static/                 # SPA 정적 파일(index.html)
 └── README.md
 ```
 
@@ -48,24 +50,58 @@ investment-assistant/
 - OpenClaw 설치 및 실행 중 (`openclaw-gateway` 프로세스)
 - Telegram 봇 연결 완료
 - Python 3.x
+- FastAPI/uvicorn 실행 가능한 Python 환경
 
 ## 🚀 설치 순서
 
 | 단계 | 내용 |
 | ---- | ---- |
-| [Step 1](./docs/step1-project-setup.md) | 프로젝트 폴더 및 데이터 파일 생성 |
-| [Step 2](./docs/step2-skills.md) | OpenClaw 스킬 등록 |
-| [Step 3](./docs/step3-briefing-script.md) | 브리핑 생성 Python 스크립트 |
-| [Step 4](./docs/step4-cron.md) | cron 자동 스케줄 등록 |
-| [Step 5](./docs/step5-test.md) | 테스트 및 검증 |
+| [Step 1](./openclaw/docs/step1-project-setup.md) | 프로젝트 폴더 및 데이터 파일 생성 |
+| [Step 2](./openclaw/docs/step2-skills.md) | OpenClaw 스킬 등록 |
+| [Step 3](./openclaw/docs/step3-briefing-script.md) | 브리핑 생성 Python 스크립트 |
+| [Step 4](./openclaw/docs/step4-cron.md) | cron 자동 스케줄 등록 |
+| [Step 5](./openclaw/docs/step5-test.md) | 테스트 및 검증 |
 
 ## ⚠️ 알려진 문제 및 팁
 
-[troubleshooting.md](./docs/troubleshooting.md) 참고
+[troubleshooting.md](./openclaw/docs/troubleshooting.md) 참고
+
+## 🌐 웹앱(FastAPI) 배포 및 접속
+
+- 배포 위치: `/home/hahaysh/webapp1/webapp`
+- 서비스명: `investment-webapp` (systemd)
+- 실행 포트: `8001`
+- 운영 주소: `http://hahayshopenclaw.koreacentral.cloudapp.azure.com:8001/`
+- 웹앱은 `~/investment-assistant/data`, `~/investment-assistant/reports`를 참조
+
+```bash
+# 서비스 상태 확인
+sudo systemctl status investment-webapp --no-pager
+
+# 서비스 로그 확인
+sudo journalctl -u investment-webapp -n 100 --no-pager
+
+# 로컬 헬스체크
+curl -s http://127.0.0.1:8001/health
+curl -s http://127.0.0.1:8001/api/status
+```
+
+참고: UFW가 비활성(inactive)인 경우에도 Azure NSG 인바운드에서 TCP 8001 허용이 필요합니다.
+
+## ✅ 빠른 점검 체크리스트
+
+- 서비스 상태: `sudo systemctl status investment-webapp --no-pager` 에서 `active (running)` 확인
+- API 헬스체크: `curl -s http://127.0.0.1:8001/health` 응답이 `{"status":"ok"}` 인지 확인
+- 상태 API 확인: `curl -s http://127.0.0.1:8001/api/status` 에서 `status: ok` 및 최신 리포트 키(`last_daily`, `last_weekly`) 확인
+- 외부 접속: `http://hahayshopenclaw.koreacentral.cloudapp.azure.com:8001/` 페이지 정상 로딩 확인
 
 ## 📱 수동 실행
 
 ```bash
+# 웹앱 수동 실행 (VM 내부)
+cd ~/webapp1/webapp
+python3 -m uvicorn main:app --host 0.0.0.0 --port 8001
+
 # 일일 브리핑 즉시 실행
 python3 ~/investment-assistant/generate_briefing.py
 
@@ -74,6 +110,8 @@ python3 ~/investment-assistant/generate_briefing.py
   --to telegram:YOUR_CHAT_ID --deliver \
   --message "주간 포트폴리오 리포트 생성해줘. ~/investment-assistant/data 참조해서 weekly-portfolio-report 스킬 실행하고 ~/investment-assistant/reports/weekly/$(date +%Y-W%V).md 로 저장해줘."
 ```
+
+`POST /api/run-briefing` API는 `~/investment-assistant/generate_briefing.py`를 호출합니다.
 
 ## 📂 파일 업데이트
 
