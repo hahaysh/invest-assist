@@ -1,23 +1,21 @@
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
-!*.code-workspace
+# 개인 데이터 (GitHub에 올리지 말 것)
+data/portfolio.csv
+data/watchlist.csv
+data/investor_profile.md
+generate_briefing.py
 
-# Built Visual Studio Code Extensions
-*.vsix
+# 리포트 파일
+reports/
 
-# 투자 비서 설정 (민감 정보 포함)
-config/secrets.env
-
-# 자동 생성 파일 (런타임)
-reports/daily/
-reports/weekly/
+# 로그
 logs/
 
-# Python 캐시
+# Python
 __pycache__/
 *.pyc
 *.pyo
+.venv/
+
+# 환경 설정
+.env
+secrets.env

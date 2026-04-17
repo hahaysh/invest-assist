@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>투자 비서 웹앱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --text-main: #f8fafc;
+        --text-sub: #94a3b8;
+        --accent: #f59e0b;
+        --up: #22c55e;
+        --down: #ef4444;
+      }
+
+      body {
+        background: radial-gradient(1200px 700px at 10% -10%, #1e293b 0%, var(--bg) 55%, #020617 100%);
+        color: var(--text-main);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+      }
+
+      .spin {
+        border: 3px solid rgba(245, 158, 11, 0.2);
+        border-top-color: var(--accent);
+        border-radius: 9999px;
+        width: 1rem;
+        height: 1rem;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .md-content h1,
+      .md-content h2,
+      .md-content h3,
+      .md-content h4 {
+        color: #f8fafc;
+        margin-top: 1rem;
+        margin-bottom: 0.6rem;
+        line-height: 1.3;
+      }
+
+      .md-content h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+      }
+
+      .md-content h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .md-content h3 {
+        font-size: 1.2rem;
+        font-weight: 600;
+      }
+
+      .md-content p,
+      .md-content li {
+        color: #cbd5e1;
+        line-height: 1.65;
+      }
+
+      .md-content ul {
+        list-style: disc;
+        padding-left: 1.25rem;
+      }
+
+      .md-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 0.9rem;
+        margin-bottom: 0.9rem;
+        border: 1px solid #334155;
+      }
+
+      .md-content th,
+      .md-content td {
+        border: 1px solid #334155;
+        padding: 0.5rem 0.65rem;
+      }
+
+      .md-content th {
+        background-color: #0b1220;
+        color: #f8fafc;
+      }
+
+      .md-content td {
+        background-color: #182338;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(2px);
+      }
+
+      .modal.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-content {
+        background-color: var(--card);
+        border: 1px solid #334155;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <div class="mx-auto max-w-7xl px-4 py-5 md:px-8 md:py-8">
+      <header class="rounded-2xl border border-slate-700 bg-slate-900/80 p-4 backdrop-blur md:p-5">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight md:text-3xl">투자 비서 대시보드</h1>
+            <p class="mt-1 text-sm text-slate-400">FastAPI + Vanilla JS + Tailwind CDN</p>
+          </div>
+          <nav class="grid grid-cols-3 gap-2 rounded-xl bg-slate-800/70 p-1">
+            <button data-tab="dashboard" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold">대시보드</button>
+            <button data-tab="portfolio" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold">포트폴리오</button>
+            <button data-tab="watchlist" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold">Watchlist</button>
+          </nav>
+        </div>
+      </header>
+
+      <main class="mt-6">
+        <section id="tab-dashboard" class="tab-panel space-y-5">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <article class="rounded-2xl border border-slate-700 p-4" style="background-color: var(--card)">
+              <p class="text-sm text-slate-400">최신 일일 브리핑 날짜</p>
+              <p id="latestDaily" class="mt-2 text-2xl font-bold" style="color: var(--accent)">-</p>
+            </article>
+            <article class="rounded-2xl border border-slate-700 p-4" style="background-color: var(--card)">
+              <p class="text-sm text-slate-400">최신 주간 리포트 주차</p>
+              <p id="latestWeekly" class="mt-2 text-2xl font-bold" style="color: var(--accent)">-</p>
+            </article>
+          </div>
+
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <button
+              id="runDailyBtn"
+              class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-slate-950 transition hover:brightness-105"
+              style="background-color: var(--accent)"
+            >
+              <span>일일 브리핑 실행</span>
+              <span id="runDailySpinner" class="spin hidden"></span>
+            </button>
+            <button
+              id="runWeeklyBtn"
+              class="inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 font-semibold transition hover:bg-amber-500/10"
+              style="border-color: var(--accent); color: var(--accent)"
+            >
+              <span>주간 리포트 실행</span>
+              <span id="runWeeklySpinner" class="spin hidden"></span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <article class="rounded-2xl border border-slate-700 p-4" style="background-color: var(--card)">
+              <h2 class="mb-3 text-lg font-semibold">일일 브리핑 목록</h2>
+              <ul id="dailyList" class="space-y-2"></ul>
+            </article>
+            <article class="rounded-2xl border border-slate-700 p-4" style="background-color: var(--card)">
+              <h2 class="mb-3 text-lg font-semibold">주간 리포트 목록</h2>
+              <ul id="weeklyList" class="space-y-2"></ul>
+            </article>
+          </div>
+
+          <article class="rounded-2xl border border-slate-700 p-4 md:p-6" style="background-color: var(--card)">
+            <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div class="flex gap-2">
+                <button data-viewer-tab="daily" class="viewer-tab rounded-lg px-3 py-2 text-sm font-semibold">일일</button>
+                <button data-viewer-tab="weekly" class="viewer-tab rounded-lg px-3 py-2 text-sm font-semibold">주간</button>
+              </div>
+              <div class="w-full md:w-72">
+                <label for="reportSelect" class="mb-1 block text-xs text-slate-400">리포트 선택</label>
+                <select id="reportSelect" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100"></select>
+              </div>
+            </div>
+            <p id="viewerMeta" class="mb-3 text-xs text-slate-400"></p>
+            <div id="viewer" class="md-content min-h-[260px] rounded-xl border border-slate-700 bg-slate-900 p-4"></div>
+          </article>
+        </section>
+
+        <!-- Portfolio Tab -->
+        <section id="tab-portfolio" class="tab-panel hidden">
+          <article class="rounded-2xl border border-slate-700 p-4 md:p-6" style="background-color: var(--card)">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-xl font-semibold">포트폴리오</h2>
+              <button id="addPortfolioBtn" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">+ 종목 추가</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm border-collapse">
+                <thead class="bg-slate-900 text-slate-200">
+                  <tr>
+                    <th class="px-3 py-2 text-left">Ticker</th>
+                    <th class="px-3 py-2 text-left">종목명</th>
+                    <th class="px-3 py-2 text-left">시장</th>
+                    <th class="px-3 py-2 text-left">수량</th>
+                    <th class="px-3 py-2 text-left">평단</th>
+                    <th class="px-3 py-2 text-left">통화</th>
+                    <th class="px-3 py-2 text-left">비중</th>
+                    <th class="px-3 py-2 text-left">상태</th>
+                    <th class="px-3 py-2 text-center">작업</th>
+                  </tr>
+                </thead>
+                <tbody id="portfolioRows" class="divide-y divide-slate-700"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <!-- Watchlist Tab -->
+        <section id="tab-watchlist" class="tab-panel hidden">
+          <article class="rounded-2xl border border-slate-700 p-4 md:p-6" style="background-color: var(--card)">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-xl font-semibold">Watchlist</h2>
+              <button id="addWatchlistBtn" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">+ 종목 추가</button>
+            </div>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div id="watchlistGrid" class="contents"></div>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="pointer-events-none fixed right-4 top-4 z-50 hidden rounded-lg border px-4 py-3 text-sm font-medium shadow-lg"></div>
+
+    <!-- Portfolio Modal -->
+    <div id="portfolioModal" class="modal">
+      <div class="modal-content">
+        <h2 id="portfolioModalTitle" class="mb-4 text-xl font-semibold">종목 추가</h2>
+        <form id="portfolioForm" class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400">Ticker *</label>
+              <input id="portfolioTicker" type="text" required placeholder="AAPL" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400">종목명 *</label>
+              <input id="portfolioCompanyName" type="text" required placeholder="Apple" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400">시장</label>
+              <select id="portfolioMarket" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100">
+                <option value="KRX">KRX</option>
+                <option value="NYSE">NYSE</option>
+                <option value="NASDAQ">NASDAQ</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400">상태</label>
+              <select id="portfolioHoldingStatus" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100">
+                <option value="active">active</option>
+                <option value="cash">cash</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400">수량</label>
+              <input id="portfolioQuantity" type="number" placeholder="100" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400">평단가</label>
+              <input id="portfolioAvgCost" type="number" step="0.01" placeholder="150.50" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400">통화</label>
+              <select id="portfolioCurrency" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100">
+                <option value="KRW">KRW</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400">목표 비중</label>
+              <input id="portfolioTargetWeight" type="number" step="0.01" placeholder="0.15" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400">우선순위 (1-5)</label>
+              <input id="portfolioPriority" type="number" min="1" max="5" placeholder="1" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400">투자 논리</label>
+            <textarea id="portfolioThesis" placeholder="투자 논리를 입력하세요" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400">위험 노트</label>
+            <textarea id="portfolioRiskNotes" placeholder="위험 요소를 입력하세요" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
+          </div>
+
+          <div class="flex gap-3 pt-4">
+            <button type="submit" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">저장</button>
+            <button type="button" id="closePortfolioModal" class="flex-1 rounded-lg border border-slate-500 px-3 py-2 text-sm font-semibold hover:bg-slate-800">취소</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Watchlist Modal -->
+    <div id="watchlistModal" class="modal">
+      <div class="modal-content">
+        <h2 id="watchlistModalTitle" class="mb-4 text-xl font-semibold">종목 추가</h2>
+        <form id="watchlistForm" class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400">Ticker *</label>
+              <input id="watchlistTicker" type="text" required placeholder="MSFT" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400">종목명 *</label>
+              <input id="watchlistCompanyName" type="text" required placeholder="Microsoft" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400">시장</label>
+              <input id="watchlistMarket" type="text" placeholder="NASDAQ" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400">진입가</label>
+              <input id="watchlistIdealEntry" type="number" step="0.01" placeholder="380.0" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400">관심 이유</label>
+            <textarea id="watchlistWatchReason" placeholder="관심 이유를 입력하세요" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400">진입 조건</label>
+            <textarea id="watchlistTriggerCondition" placeholder="진입 조건을 입력하세요" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400">부정 조건</label>
+            <textarea id="watchlistInvalidation" placeholder="부정 조건을 입력하세요" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400">위험 노트</label>
+              <input id="watchlistRiskNotes" type="text" placeholder="위험 요소" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400">우선순위 (1-5)</label>
+              <input id="watchlistPriority" type="number" min="1" max="5" placeholder="1" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+            </div>
+          </div>
+
+          <div class="flex gap-3 pt-4">
+            <button type="submit" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">저장</button>
+            <button type="button" id="closeWatchlistModal" class="flex-1 rounded-lg border border-slate-500 px-3 py-2 text-sm font-semibold hover:bg-slate-800">취소</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const state = {
+        currentTab: "dashboard",
+        viewerType: "daily",
+        dailyReports: [],
+        weeklyReports: [],
+        portfolioEditTicker: null,
+        watchlistEditTicker: null,
+      };
+
+      const navTabs = document.querySelectorAll(".nav-tab");
+      const panels = document.querySelectorAll(".tab-panel");
+      const viewerTabs = document.querySelectorAll(".viewer-tab");
+      const reportSelect = document.getElementById("reportSelect");
+      const viewer = document.getElementById("viewer");
+      const viewerMeta = document.getElementById("viewerMeta");
+      const toast = document.getElementById("toast");
+
+      const portfolioModal = document.getElementById("portfolioModal");
+      const portfolioForm = document.getElementById("portfolioForm");
+      const watchlistModal = document.getElementById("watchlistModal");
+      const watchlistForm = document.getElementById("watchlistForm");
+
+      function showToast(message, isError = false) {
+        toast.textContent = message;
+        toast.className = "pointer-events-none fixed right-4 top-4 z-50 rounded-lg border px-4 py-3 text-sm font-medium shadow-lg";
+        if (isError) {
+          toast.classList.add("border-red-400", "bg-red-900/30", "text-red-200");
+        } else {
+          toast.classList.add("border-green-400", "bg-green-900/30", "text-green-200");
+        }
+        toast.classList.remove("hidden");
+        window.setTimeout(() => toast.classList.add("hidden"), 2200);
+      }
+
+      async function apiFetch(url, options = {}) {
+        const response = await fetch(url, options);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.detail || "요청 처리 중 오류가 발생했습니다.");
+        }
+        return data;
+      }
+
+      function setMainTab(tabName) {
+        state.currentTab = tabName;
+        navTabs.forEach((tab) => {
+          const active = tab.dataset.tab === tabName;
+          tab.classList.toggle("bg-amber-500", active);
+          tab.classList.toggle("text-slate-950", active);
+          tab.classList.toggle("text-slate-300", !active);
+        });
+        panels.forEach((panel) => {
+          panel.classList.toggle("hidden", panel.id !== `tab-${tabName}`);
+        });
+      }
+
+      function setViewerTab(type) {
+        state.viewerType = type;
+        viewerTabs.forEach((tab) => {
+          const active = tab.dataset.viewerTab === type;
+          tab.classList.toggle("bg-amber-500", active);
+          tab.classList.toggle("text-slate-950", active);
+          tab.classList.toggle("text-slate-300", !active);
+        });
+        populateReportSelect();
+      }
+
+      function renderReportList(targetId, list, type) {
+        const ul = document.getElementById(targetId);
+        ul.innerHTML = "";
+
+        if (!list.length) {
+          ul.innerHTML = '<li class="text-sm text-slate-500">리포트가 없습니다.</li>';
+          return;
+        }
+
+        list.forEach((item) => {
+          const key = type === "daily" ? item.date : item.week;
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <button class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-left text-sm hover:border-amber-400 hover:text-amber-300">
+              ${key}
+            </button>
+          `;
+          li.querySelector("button").addEventListener("click", () => {
+            setViewerTab(type);
+            reportSelect.value = key;
+            loadReport(type, key);
+            window.scrollTo({ top: document.body.scrollHeight * 0.2, behavior: "smooth" });
+          });
+          ul.appendChild(li);
+        });
+      }
+
+      function populateReportSelect() {
+        const source = state.viewerType === "daily" ? state.dailyReports : state.weeklyReports;
+        const keyName = state.viewerType === "daily" ? "date" : "week";
+
+        reportSelect.innerHTML = "";
+        if (!source.length) {
+          reportSelect.innerHTML = '<option value="">선택 가능한 리포트가 없습니다</option>';
+          viewer.innerHTML = '<p class="text-slate-500">리포트가 없습니다.</p>';
+          viewerMeta.textContent = "";
+          return;
+        }
+
+        source.forEach((item) => {
+          const option = document.createElement("option");
+          option.value = item[keyName];
+          option.textContent = item[keyName];
+          reportSelect.appendChild(option);
+        });
+
+        loadReport(state.viewerType, reportSelect.value);
+      }
+
+      function colorizeArrows(container) {
+        container.querySelectorAll("p, li, td, th, h1, h2, h3, h4").forEach((node) => {
+          const text = node.textContent || "";
+          if (text.includes("▲")) {
+            node.style.color = "var(--up)";
+          }
+          if (text.includes("▼")) {
+            node.style.color = "var(--down)";
+          }
+        });
+      }
+
+      async function loadReport(type, key) {
+        if (!key) {
+          return;
+        }
+
+        const endpoint = type === "daily" ? `/api/reports/daily/${key}` : `/api/reports/weekly/${key}`;
+
+        try {
+          const data = await apiFetch(endpoint);
+          viewer.innerHTML = marked.parse(data.content || "");
+          colorizeArrows(viewer);
+          viewerMeta.textContent = type === "daily" ? `일일 브리핑: ${data.date}` : `주간 리포트: ${data.week}`;
+        } catch (error) {
+          viewer.innerHTML = `<p class="text-red-400">${error.message}</p>`;
+          viewerMeta.textContent = "";
+        }
+      }
+
+      async function refreshDashboard() {
+        try {
+          const [status, daily, weekly] = await Promise.all([
+            apiFetch("/api/status"),
+            apiFetch("/api/reports/daily"),
+            apiFetch("/api/reports/weekly"),
+          ]);
+
+          state.dailyReports = daily;
+          state.weeklyReports = weekly;
+
+          document.getElementById("latestDaily").textContent = status.last_daily || "-";
+          document.getElementById("latestWeekly").textContent = status.last_weekly || "-";
+
+          renderReportList("dailyList", daily, "daily");
+          renderReportList("weeklyList", weekly, "weekly");
+          populateReportSelect();
+        } catch (error) {
+          showToast(error.message, true);
+        }
+      }
+
+      async function runBriefing(buttonId, spinnerId, doneMessage) {
+        const button = document.getElementById(buttonId);
+        const spinner = document.getElementById(spinnerId);
+
+        button.disabled = true;
+        spinner.classList.remove("hidden");
+        try {
+          await apiFetch("/api/run-briefing", { method: "POST" });
+          showToast(doneMessage);
+          await refreshDashboard();
+        } catch (error) {
+          showToast(error.message, true);
+        } finally {
+          spinner.classList.add("hidden");
+          button.disabled = false;
+        }
+      }
+
+      // Portfolio Functions
+      function openPortfolioModal(ticker = null) {
+        state.portfolioEditTicker = ticker;
+        document.getElementById("portfolioModalTitle").textContent = ticker ? "종목 수정" : "종목 추가";
+        
+        if (ticker) {
+          const rows = document.querySelectorAll("#portfolioRows tr");
+          let found = false;
+          rows.forEach((row) => {
+            if (row.cells[0]?.textContent === ticker) {
+              document.getElementById("portfolioTicker").value = row.cells[0].textContent;
+              document.getElementById("portfolioTicker").disabled = true;
+              document.getElementById("portfolioCompanyName").value = row.cells[1].textContent;
+              document.getElementById("portfolioMarket").value = row.cells[2].textContent;
+              document.getElementById("portfolioQuantity").value = row.cells[3].textContent;
+              document.getElementById("portfolioAvgCost").value = row.cells[4].textContent;
+              document.getElementById("portfolioCurrency").value = row.cells[5].textContent;
+              document.getElementById("portfolioTargetWeight").value = row.cells[6].textContent;
+              document.getElementById("portfolioHoldingStatus").value = row.cells[7].textContent;
+              document.getElementById("portfolioPriority").value = row.dataset.priority || "";
+              document.getElementById("portfolioThesis").value = row.dataset.thesis || "";
+              document.getElementById("portfolioRiskNotes").value = row.dataset.riskNotes || "";
+              found = true;
+            }
+          });
+        } else {
+          document.getElementById("portfolioTicker").disabled = false;
+          portfolioForm.reset();
+        }
+        
+        portfolioModal.classList.add("active");
+      }
+
+      function closePortfolioModal() {
+        portfolioModal.classList.remove("active");
+        document.getElementById("portfolioTicker").disabled = false;
+        portfolioForm.reset();
+        state.portfolioEditTicker = null;
+      }
+
+      async function savePortfolio(e) {
+        e.preventDefault();
+        const ticker = document.getElementById("portfolioTicker").value.toUpperCase().trim();
+        const body = {
+          ticker,
+          company_name: document.getElementById("portfolioCompanyName").value,
+          market: document.getElementById("portfolioMarket").value,
+          quantity: document.getElementById("portfolioQuantity").value,
+          avg_cost: document.getElementById("portfolioAvgCost").value,
+          currency: document.getElementById("portfolioCurrency").value,
+          target_weight: document.getElementById("portfolioTargetWeight").value,
+          holding_status: document.getElementById("portfolioHoldingStatus").value,
+          thesis: document.getElementById("portfolioThesis").value,
+          risk_notes: document.getElementById("portfolioRiskNotes").value,
+          priority: document.getElementById("portfolioPriority").value,
+        };
+
+        try {
+          if (state.portfolioEditTicker) {
+            await apiFetch(`/api/portfolio/${state.portfolioEditTicker}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            showToast("포트폴리오 수정 완료");
+          } else {
+            await apiFetch("/api/portfolio", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            showToast("포트폴리오 추가 완료");
+          }
+          closePortfolioModal();
+          await loadPortfolio();
+        } catch (error) {
+          showToast(error.message, true);
+        }
+      }
+
+      async function deletePortfolio(ticker) {
+        if (!confirm(`${ticker}을(를) 삭제하시겠습니까?`)) return;
+        try {
+          await apiFetch(`/api/portfolio/${ticker}`, { method: "DELETE" });
+          showToast("포트폴리오 삭제 완료");
+          await loadPortfolio();
+        } catch (error) {
+          showToast(error.message, true);
+        }
+      }
+
+      async function loadPortfolio() {
+        const tbody = document.getElementById("portfolioRows");
+        tbody.innerHTML = '<tr><td colspan="9" class="px-3 py-3 text-slate-400">로딩 중...</td></tr>';
+        try {
+          const rows = await apiFetch("/api/portfolio");
+          if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="9" class="px-3 py-3 text-slate-500">데이터가 없습니다.</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = rows
+            .map(
+              (row) => `
+                <tr class="border-b border-slate-700/50" data-priority="${row.priority}" data-thesis="${row.thesis}" data-risk-notes="${row.risk_notes}">
+                  <td class="px-3 py-2 font-semibold text-amber-300">${row.ticker || ""}</td>
+                  <td class="px-3 py-2">${row.company_name || ""}</td>
+                  <td class="px-3 py-2">${row.market || ""}</td>
+                  <td class="px-3 py-2">${row.quantity || ""}</td>
+                  <td class="px-3 py-2">${row.avg_cost || ""}</td>
+                  <td class="px-3 py-2">${row.currency || ""}</td>
+                  <td class="px-3 py-2">${row.target_weight || ""}</td>
+                  <td class="px-3 py-2">${row.holding_status || ""}</td>
+                  <td class="px-3 py-2 text-center space-x-1">
+                    <button onclick="openPortfolioModal('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-amber-500/20 hover:text-amber-300">수정</button>
+                    <button onclick="deletePortfolio('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-red-500/20 hover:text-red-300">삭제</button>
+                  </td>
+                </tr>
+              `,
+            )
+            .join("");
+        } catch (error) {
+          tbody.innerHTML = `<tr><td colspan="9" class="px-3 py-3 text-red-400">${error.message}</td></tr>`;
+        }
+      }
+
+      // Watchlist Functions
+      function openWatchlistModal(ticker = null) {
+        state.watchlistEditTicker = ticker;
+        document.getElementById("watchlistModalTitle").textContent = ticker ? "종목 수정" : "종목 추가";
+        
+        if (ticker) {
+          fetch(`/api/watchlist`)
+            .then((r) => r.json())
+            .then((rows) => {
+              const found = rows.find((r) => r.ticker === ticker);
+              if (found) {
+                document.getElementById("watchlistTicker").value = found.ticker;
+                document.getElementById("watchlistTicker").disabled = true;
+                document.getElementById("watchlistCompanyName").value = found.company_name;
+                document.getElementById("watchlistMarket").value = found.market;
+                document.getElementById("watchlistIdealEntry").value = found.ideal_entry;
+                document.getElementById("watchlistWatchReason").value = found.watch_reason;
+                document.getElementById("watchlistTriggerCondition").value = found.trigger_condition;
+                document.getElementById("watchlistInvalidation").value = found.invalidation;
+                document.getElementById("watchlistRiskNotes").value = found.risk_notes;
+                document.getElementById("watchlistPriority").value = found.priority;
+              }
+            });
+        } else {
+          document.getElementById("watchlistTicker").disabled = false;
+          watchlistForm.reset();
+        }
+        
+        watchlistModal.classList.add("active");
+      }
+
+      function closeWatchlistModal() {
+        watchlistModal.classList.remove("active");
+        document.getElementById("watchlistTicker").disabled = false;
+        watchlistForm.reset();
+        state.watchlistEditTicker = null;
+      }
+
+      async function saveWatchlist(e) {
+        e.preventDefault();
+        const ticker = document.getElementById("watchlistTicker").value.toUpperCase().trim();
+        const body = {
+          ticker,
+          company_name: document.getElementById("watchlistCompanyName").value,
+          market: document.getElementById("watchlistMarket").value,
+          watch_reason: document.getElementById("watchlistWatchReason").value,
+          ideal_entry: document.getElementById("watchlistIdealEntry").value,
+          trigger_condition: document.getElementById("watchlistTriggerCondition").value,
+          invalidation: document.getElementById("watchlistInvalidation").value,
+          risk_notes: document.getElementById("watchlistRiskNotes").value,
+          priority: document.getElementById("watchlistPriority").value,
+        };
+
+        try {
+          if (state.watchlistEditTicker) {
+            await apiFetch(`/api/watchlist/${state.watchlistEditTicker}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            showToast("Watchlist 수정 완료");
+          } else {
+            await apiFetch("/api/watchlist", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            showToast("Watchlist 추가 완료");
+          }
+          closeWatchlistModal();
+          await loadWatchlist();
+        } catch (error) {
+          showToast(error.message, true);
+        }
+      }
+
+      async function deleteWatchlist(ticker) {
+        if (!confirm(`${ticker}을(를) 삭제하시겠습니까?`)) return;
+        try {
+          await apiFetch(`/api/watchlist/${ticker}`, { method: "DELETE" });
+          showToast("Watchlist 삭제 완료");
+          await loadWatchlist();
+        } catch (error) {
+          showToast(error.message, true);
+        }
+      }
+
+      async function loadWatchlist() {
+        const grid = document.getElementById("watchlistGrid");
+        grid.innerHTML = "";
+
+        try {
+          const rows = await apiFetch("/api/watchlist");
+          if (!rows.length) {
+            grid.innerHTML = '<div class="col-span-2 text-center text-slate-500 py-4">데이터가 없습니다.</div>';
+            return;
+          }
+
+          const html = rows
+            .map(
+              (row) => `
+                <div class="rounded-lg border border-slate-700 p-4" style="background-color: var(--card)">
+                  <div class="mb-3 flex items-center justify-between">
+                    <div>
+                      <p class="font-semibold text-amber-300">${row.ticker}</p>
+                      <p class="text-sm text-slate-400">${row.company_name}</p>
+                    </div>
+                    <div class="flex gap-1">
+                      <button onclick="openWatchlistModal('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-amber-500/20 hover:text-amber-300">수정</button>
+                      <button onclick="deleteWatchlist('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-red-500/20 hover:text-red-300">삭제</button>
+                    </div>
+                  </div>
+                  <div class="space-y-1 text-xs text-slate-400">
+                    <p><strong>시장:</strong> ${row.market}</p>
+                    <p><strong>진입가:</strong> ${row.ideal_entry}</p>
+                    <p><strong>우선순위:</strong> ${row.priority}</p>
+                    <p><strong>관심:</strong> ${row.watch_reason}</p>
+                  </div>
+                </div>
+              `,
+            )
+            .join("");
+
+          grid.innerHTML = html;
+        } catch (error) {
+          grid.innerHTML = `<div class="col-span-2 text-center text-red-400 py-4">${error.message}</div>`;
+        }
+      }
+
+      // Event Listeners
+      navTabs.forEach((tab) => {
+        tab.addEventListener("click", async () => {
+          const target = tab.dataset.tab;
+          setMainTab(target);
+          if (target === "portfolio") {
+            await loadPortfolio();
+          }
+          if (target === "watchlist") {
+            await loadWatchlist();
+          }
+        });
+      });
+
+      viewerTabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          setViewerTab(tab.dataset.viewerTab);
+        });
+      });
+
+      reportSelect.addEventListener("change", () => {
+        loadReport(state.viewerType, reportSelect.value);
+      });
+
+      document.getElementById("runDailyBtn").addEventListener("click", () => {
+        runBriefing("runDailyBtn", "runDailySpinner", "브리핑 생성을 시작했습니다.");
+      });
+
+      document.getElementById("runWeeklyBtn").addEventListener("click", () => {
+        runBriefing("runWeeklyBtn", "runWeeklySpinner", "주간 리포트 생성을 시작했습니다.");
+      });
+
+      document.getElementById("addPortfolioBtn").addEventListener("click", () => openPortfolioModal());
+      document.getElementById("closePortfolioModal").addEventListener("click", closePortfolioModal);
+      portfolioForm.addEventListener("submit", savePortfolio);
+      portfolioModal.addEventListener("click", (e) => {
+        if (e.target === portfolioModal) closePortfolioModal();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && portfolioModal.classList.contains("active")) closePortfolioModal();
+      });
+
+      document.getElementById("addWatchlistBtn").addEventListener("click", () => openWatchlistModal());
+      document.getElementById("closeWatchlistModal").addEventListener("click", closeWatchlistModal);
+      watchlistForm.addEventListener("submit", saveWatchlist);
+      watchlistModal.addEventListener("click", (e) => {
+        if (e.target === watchlistModal) closeWatchlistModal();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && watchlistModal.classList.contains("active")) closeWatchlistModal();
+      });
+
+      setMainTab("dashboard");
+      setViewerTab("daily");
+      refreshDashboard();
+    </script>
+  </body>
+</html>
