@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Run checks and rsync dry-run only (no service restart)"
+        description: "점검 및 rsync 드라이런만 실행 (서비스 재시작 없음)"
         required: true
         default: "false"
         type: choice
@@ -18,7 +18,7 @@ on:
           - "false"
           - "true"
       rollback_on_failure:
-        description: "Rollback automatically when deployment fails"
+        description: "배포 실패 시 자동 롤백 실행"
         required: true
         default: "true"
         type: choice
