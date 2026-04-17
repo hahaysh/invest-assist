@@ -351,7 +351,9 @@
               <input id="watchlistMarket" type="text" placeholder="NASDAQ" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
             <div>
-              <label class="block text-xs text-slate-400">진입가</label>
+              <label class="block text-xs text-slate-400">
+                진입가 <span id="watchlistCurrencyBadge" class="ml-1 text-slate-500"></span>
+              </label>
               <input id="watchlistIdealEntry" type="number" step="0.01" placeholder="380.0" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
           </div>
@@ -426,11 +428,31 @@
         window.setTimeout(() => toast.classList.add("hidden"), 2200);
       }
 
+      function formatApiDetail(detail) {
+        if (Array.isArray(detail)) {
+          return detail
+            .map((item) => {
+              if (typeof item === "string") return item;
+              if (item && typeof item === "object") {
+                const loc = Array.isArray(item.loc) ? item.loc.join(".") : "";
+                const msg = item.msg || JSON.stringify(item);
+                return loc ? `${loc}: ${msg}` : msg;
+              }
+              return String(item);
+            })
+            .join(" | ");
+        }
+        if (detail && typeof detail === "object") {
+          return detail.message || JSON.stringify(detail);
+        }
+        return detail ? String(detail) : "요청 처리 중 오류가 발생했습니다.";
+      }
+
       async function apiFetch(url, options = {}) {
         const response = await fetch(url, options);
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          throw new Error(data.detail || "요청 처리 중 오류가 발생했습니다.");
+          throw new Error(formatApiDetail(data.detail));
         }
         return data;
       }
@@ -709,6 +731,19 @@
         return value === null || value === undefined || String(value).trim() === "";
       }
 
+      function setWatchlistCurrencyBadge(currency = "", market = "") {
+        const badge = document.getElementById("watchlistCurrencyBadge");
+        if (!badge) return;
+        const cur = String(currency || "").toUpperCase();
+        if (cur === "KRW" || market === "KRX") {
+          badge.textContent = "(원화 KRW)";
+        } else if (cur === "USD" || market === "NASDAQ" || market === "NYSE" || market === "US") {
+          badge.textContent = "(달러 USD)";
+        } else {
+          badge.textContent = "";
+        }
+      }
+
       function setIfBlank(elementId, value) {
         const field = document.getElementById(elementId);
         if (!field) return;
@@ -759,6 +794,8 @@
           setIfBlank("watchlistInvalidation", enriched.invalidation);
           setIfBlank("watchlistRiskNotes", enriched.risk_notes);
 
+          setWatchlistCurrencyBadge(enriched.currency, enriched.market);
+
           showToast("기본 정보를 자동으로 채웠습니다.");
         } catch (error) {
           showToast(`자동 채움 실패: ${error.message}`, true);
@@ -790,12 +827,14 @@
                 document.getElementById("watchlistInvalidation").value = found.invalidation;
                 document.getElementById("watchlistRiskNotes").value = found.risk_notes;
                 document.getElementById("watchlistPriority").value = found.priority;
+                setWatchlistCurrencyBadge("", found.market);
               }
             });
         } else {
           document.getElementById("watchlistTicker").disabled = false;
           watchlistForm.reset();
           state.watchlistAutofillLoading = false;
+          setWatchlistCurrencyBadge("", "");
         }
         
         watchlistModal.classList.add("active");
@@ -808,21 +847,43 @@
         watchlistForm.reset();
         state.watchlistEditTicker = null;
         state.watchlistAutofillLoading = false;
+        setWatchlistCurrencyBadge("", "");
       }
 
       async function saveWatchlist(e) {
         e.preventDefault();
         const ticker = document.getElementById("watchlistTicker").value.toUpperCase().trim();
+
+        const idealEntryRaw = document.getElementById("watchlistIdealEntry").value;
+        const priorityRaw = document.getElementById("watchlistPriority").value;
+
+        if (isBlank(idealEntryRaw)) {
+          showToast("진입가가 비어 있습니다. 자동채움 후 저장하거나 직접 입력해 주세요.", true);
+          return;
+        }
+
+        const idealEntry = Number(idealEntryRaw);
+        if (Number.isNaN(idealEntry)) {
+          showToast("진입가 형식이 올바르지 않습니다.", true);
+          return;
+        }
+
+        const priority = Number(priorityRaw || 3);
+        if (Number.isNaN(priority)) {
+          showToast("우선순위 형식이 올바르지 않습니다.", true);
+          return;
+        }
+
         const body = {
           ticker,
           company_name: document.getElementById("watchlistCompanyName").value,
           market: document.getElementById("watchlistMarket").value,
           watch_reason: document.getElementById("watchlistWatchReason").value,
-          ideal_entry: document.getElementById("watchlistIdealEntry").value,
+          ideal_entry: idealEntry,
           trigger_condition: document.getElementById("watchlistTriggerCondition").value,
           invalidation: document.getElementById("watchlistInvalidation").value,
           risk_notes: document.getElementById("watchlistRiskNotes").value,
-          priority: document.getElementById("watchlistPriority").value,
+          priority: priority,
         };
 
         try {

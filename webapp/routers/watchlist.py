@@ -102,6 +102,43 @@ def _extract_price(info: dict[str, Any]) -> float | None:
     return None
 
 
+def _candidate_tickers(ticker: str) -> list[str]:
+    normalized = _normalize_ticker(ticker)
+    if re.fullmatch(r"\d{6}", normalized):
+        return [f"{normalized}.KS", f"{normalized}.KQ", normalized]
+    if normalized.endswith(".KS") or normalized.endswith(".KQ"):
+        base = normalized.rsplit(".", 1)[0]
+        return [normalized, base]
+    return [normalized]
+
+
+def _extract_price_from_ticker(yf_ticker: Any, info: dict[str, Any]) -> float | None:
+    price = _extract_price(info)
+    if price is not None:
+        return price
+
+    try:
+        fast_info = getattr(yf_ticker, "fast_info", None)
+        if fast_info:
+            for key in ("lastPrice", "last_price", "regularMarketPrice"):
+                value = fast_info.get(key) if hasattr(fast_info, "get") else None
+                if value is not None:
+                    return float(value)
+    except Exception:
+        pass
+
+    try:
+        hist = yf_ticker.history(period="5d", interval="1d")
+        if hist is not None and not hist.empty:
+            close_series = hist.get("Close")
+            if close_series is not None and not close_series.dropna().empty:
+                return float(close_series.dropna().iloc[-1])
+    except Exception:
+        pass
+
+    return None
+
+
 def _headline(news_items: list[dict[str, Any]]) -> str:
     titles: list[str] = []
     for item in news_items[:2]:
@@ -185,29 +222,63 @@ async def watchlist_health() -> dict[str, str]:
 async def enrich_watchlist_item(ticker: str | None = None, company_name: str | None = None) -> dict[str, str | float | None]:
     resolved = _resolve_ticker(ticker, company_name)
 
-    try:
-        yf_ticker = yf.Ticker(resolved)
-        info = dict(yf_ticker.info or {})
-        news_items = list(getattr(yf_ticker, "news", []) or [])
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"시세/뉴스 조회 실패: {exc}") from exc
+    best: dict[str, Any] | None = None
+    last_error: Exception | None = None
+
+    for symbol in _candidate_tickers(resolved):
+        try:
+            yf_ticker = yf.Ticker(symbol)
+            info = dict(yf_ticker.info or {})
+            news_items = list(getattr(yf_ticker, "news", []) or [])
+            price = _extract_price_from_ticker(yf_ticker, info)
+            currency = str(info.get("currency") or "").upper()
+            score = 0
+            if info.get("longName") or info.get("shortName"):
+                score += 2
+            if price is not None:
+                score += 3
+            if symbol.endswith(".KS") or symbol.endswith(".KQ"):
+                if currency == "KRW":
+                    score += 2
+
+            if (best is None) or (score > best["score"]):
+                best = {
+                    "symbol": symbol,
+                    "info": info,
+                    "news_items": news_items,
+                    "price": price,
+                    "currency": currency,
+                    "score": score,
+                }
+        except Exception as exc:
+            last_error = exc
+
+    if best is None:
+        raise HTTPException(status_code=502, detail=f"시세/뉴스 조회 실패: {last_error}")
+
+    info = best["info"]
+    news_items = best["news_items"]
+    price = best["price"]
+    used_symbol = best["symbol"]
+    currency = best["currency"]
 
     company = str(
         info.get("longName")
         or info.get("shortName")
         or (company_name or "")
-        or _display_ticker(resolved)
+        or _display_ticker(used_symbol)
     ).strip()
-    market = _infer_market(resolved, info)
-    price = _extract_price(info)
+
+    market = _infer_market(used_symbol, info)
     news_summary = _headline(news_items)
     templates = _build_templates(company, market, price, news_summary)
 
     return {
-        "ticker": _display_ticker(resolved),
+        "ticker": _display_ticker(used_symbol),
         "company_name": company,
         "market": market,
         "ideal_entry": price,
+        "currency": currency or ("KRW" if market == "KRX" else "USD"),
         "watch_reason": templates["watch_reason"],
         "trigger_condition": templates["trigger_condition"],
         "invalidation": templates["invalidation"],
