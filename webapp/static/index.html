@@ -398,6 +398,7 @@
         weeklyReports: [],
         portfolioEditTicker: null,
         watchlistEditTicker: null,
+        watchlistAutofillLoading: false,
       };
 
       const navTabs = document.querySelectorAll(".nav-tab");
@@ -704,6 +705,71 @@
       }
 
       // Watchlist Functions
+      function isBlank(value) {
+        return value === null || value === undefined || String(value).trim() === "";
+      }
+
+      function setIfBlank(elementId, value) {
+        const field = document.getElementById(elementId);
+        if (!field) return;
+        if (isBlank(field.value) && !isBlank(value)) {
+          field.value = value;
+        }
+      }
+
+      async function autofillWatchlistFields({ ticker = "", companyName = "" } = {}) {
+        if (state.watchlistEditTicker || state.watchlistAutofillLoading) {
+          return;
+        }
+
+        const normalizedTicker = (ticker || "").toUpperCase().trim();
+        const normalizedCompany = (companyName || "").trim();
+        if (!normalizedTicker && !normalizedCompany) {
+          return;
+        }
+
+        const title = document.getElementById("watchlistModalTitle");
+        const tickerField = document.getElementById("watchlistTicker");
+        const companyField = document.getElementById("watchlistCompanyName");
+        const originalTitle = "종목 추가";
+
+        try {
+          state.watchlistAutofillLoading = true;
+          title.textContent = `${originalTitle} (자동 채움 중...)`;
+          tickerField.disabled = true;
+          companyField.disabled = true;
+
+          const params = new URLSearchParams();
+          if (normalizedTicker) params.set("ticker", normalizedTicker);
+          if (!normalizedTicker && normalizedCompany) params.set("company_name", normalizedCompany);
+
+          const enriched = await apiFetch(`/api/watchlist/enrich?${params.toString()}`);
+
+          setIfBlank("watchlistTicker", enriched.ticker);
+          setIfBlank("watchlistCompanyName", enriched.company_name);
+          setIfBlank("watchlistMarket", enriched.market);
+
+          const idealEntryField = document.getElementById("watchlistIdealEntry");
+          if (isBlank(idealEntryField.value) && enriched.ideal_entry !== null && enriched.ideal_entry !== undefined) {
+            idealEntryField.value = enriched.ideal_entry;
+          }
+
+          setIfBlank("watchlistWatchReason", enriched.watch_reason);
+          setIfBlank("watchlistTriggerCondition", enriched.trigger_condition);
+          setIfBlank("watchlistInvalidation", enriched.invalidation);
+          setIfBlank("watchlistRiskNotes", enriched.risk_notes);
+
+          showToast("기본 정보를 자동으로 채웠습니다.");
+        } catch (error) {
+          showToast(`자동 채움 실패: ${error.message}`, true);
+        } finally {
+          state.watchlistAutofillLoading = false;
+          title.textContent = originalTitle;
+          tickerField.disabled = false;
+          companyField.disabled = false;
+        }
+      }
+
       function openWatchlistModal(ticker = null) {
         state.watchlistEditTicker = ticker;
         document.getElementById("watchlistModalTitle").textContent = ticker ? "종목 수정" : "종목 추가";
@@ -729,6 +795,7 @@
         } else {
           document.getElementById("watchlistTicker").disabled = false;
           watchlistForm.reset();
+          state.watchlistAutofillLoading = false;
         }
         
         watchlistModal.classList.add("active");
@@ -737,8 +804,10 @@
       function closeWatchlistModal() {
         watchlistModal.classList.remove("active");
         document.getElementById("watchlistTicker").disabled = false;
+        document.getElementById("watchlistCompanyName").disabled = false;
         watchlistForm.reset();
         state.watchlistEditTicker = null;
+        state.watchlistAutofillLoading = false;
       }
 
       async function saveWatchlist(e) {
@@ -877,6 +946,15 @@
       document.getElementById("addWatchlistBtn").addEventListener("click", () => openWatchlistModal());
       document.getElementById("closeWatchlistModal").addEventListener("click", closeWatchlistModal);
       watchlistForm.addEventListener("submit", saveWatchlist);
+      document.getElementById("watchlistTicker").addEventListener("blur", () => {
+        const ticker = document.getElementById("watchlistTicker").value;
+        autofillWatchlistFields({ ticker });
+      });
+      document.getElementById("watchlistCompanyName").addEventListener("blur", () => {
+        const ticker = document.getElementById("watchlistTicker").value;
+        const companyName = document.getElementById("watchlistCompanyName").value;
+        autofillWatchlistFields({ ticker, companyName });
+      });
       watchlistModal.addEventListener("click", (e) => {
         if (e.target === watchlistModal) closeWatchlistModal();
       });
