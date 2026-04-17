@@ -93,6 +93,8 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
             set -euo pipefail
+            DEPLOY_TARGET_DIR="/home/hahaysh/webapp1/webapp"
+            VENV_PYTHON="/home/hahaysh/webapp1/venv/bin/python"
             mkdir -p "$DEPLOY_TARGET_DIR"
             test -x "$VENV_PYTHON"
             command -v rsync >/dev/null 2>&1 || true
@@ -104,6 +106,7 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
             set -euo pipefail
+            DEPLOY_TARGET_DIR="/home/hahaysh/webapp1/webapp"
             BACKUP_DIR="$HOME/webapp-backups/webapp-${{ steps.meta.outputs.backup_ts }}"
             mkdir -p "$HOME/webapp-backups"
             if [ -d "$DEPLOY_TARGET_DIR" ]; then
@@ -140,6 +143,8 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
             set -euo pipefail
+            DEPLOY_TARGET_DIR="/home/hahaysh/webapp1/webapp"
+            VENV_PYTHON="/home/hahaysh/webapp1/venv/bin/python"
             cd "$DEPLOY_TARGET_DIR"
             "$VENV_PYTHON" -m pip install --upgrade pip
             "$VENV_PYTHON" -m pip install -r requirements.txt
@@ -151,6 +156,7 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
             set -euo pipefail
+            SERVICE_NAME="investment-webapp"
             sudo systemctl restart "$SERVICE_NAME"
             sudo systemctl is-active --quiet "$SERVICE_NAME"
           '
@@ -161,6 +167,7 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
             set -euo pipefail
+            APP_PORT="8001"
             for attempt in $(seq 1 30); do
               if curl -fsS "http://127.0.0.1:$APP_PORT/health" >/dev/null \
                 && curl -fsS "http://127.0.0.1:$APP_PORT/api/status" >/dev/null; then
@@ -179,6 +186,9 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
             set -euo pipefail
+            DEPLOY_TARGET_DIR="/home/hahaysh/webapp1/webapp"
+            VENV_PYTHON="/home/hahaysh/webapp1/venv/bin/python"
+            SERVICE_NAME="investment-webapp"
             BACKUP_DIR="$HOME/webapp-backups/webapp-${{ steps.meta.outputs.backup_ts }}"
             if [ ! -d "$BACKUP_DIR" ]; then
               echo "Rollback backup not found: $BACKUP_DIR"
@@ -197,6 +207,7 @@ jobs:
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
+            SERVICE_NAME="investment-webapp"
             sudo journalctl -u "$SERVICE_NAME" -n 80 --no-pager || true
           '
 
@@ -206,6 +217,7 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
             set -euo pipefail
+            BACKUP_RETENTION_DAYS="7"
             if [ -d "$HOME/webapp-backups" ]; then
               find "$HOME/webapp-backups" -mindepth 1 -maxdepth 1 -type d -mtime +"$BACKUP_RETENTION_DAYS" -exec rm -rf {} +
             fi
