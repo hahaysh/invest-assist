@@ -1,14 +1,19 @@
 import csv
 from pathlib import Path
+import logging
+import threading
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import yfinance as yf
 
 from config import PORTFOLIO_CSV
 
 router = APIRouter(prefix="/api/portfolio", tags=["portfolio"])
+
+logger = logging.getLogger(__name__)
+_portfolio_lock = threading.Lock()
 
 PORTFOLIO_COLUMNS = [
     "ticker",
@@ -26,16 +31,16 @@ PORTFOLIO_COLUMNS = [
 
 
 class PortfolioItem(BaseModel):
-    ticker: str
-    company_name: str
-    market: str
-    holding_status: str
+    ticker: str = Field(..., min_length=1, max_length=20)
+    company_name: str = Field(..., min_length=1, max_length=255)
+    market: str = Field(..., min_length=1, max_length=20)
+    holding_status: str = Field(..., min_length=1, max_length=20)
     quantity: int
     avg_cost: float
-    currency: str
+    currency: str = Field(..., min_length=1, max_length=10)
     target_weight: float
-    thesis: str
-    risk_notes: str
+    thesis: str = Field(default="", max_length=2000)
+    risk_notes: str = Field(default="", max_length=2000)
     priority: int
 
 
@@ -122,7 +127,8 @@ def _fetch_current_price(ticker: str, market: str) -> float | None:
                 close_price = _to_float(hist["Close"].iloc[-1], default=-1.0)
                 if close_price > 0:
                     return close_price
-        except Exception:
+        except Exception as exc:
+            logger.debug("Price fetch failed for %s: %s", candidate, exc)
             continue
     return None
 
@@ -174,9 +180,9 @@ def _fetch_exchange_rate() -> float:
             rate = _to_float(current_price, default=-1.0)
             if rate > 0:
                 return rate
-    except Exception:
-        pass
-    
+    except Exception as exc:
+        logger.warning("Exchange rate fetch failed: %s", exc)
+
     return 1300.0
 
 
@@ -194,13 +200,18 @@ def _read_rows(file_path: Path) -> list[dict[str, str]]:
 
 def _write_rows(file_path: Path, rows: list[dict[str, str]]) -> None:
     file_path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        with file_path.open("w", newline="", encoding="utf-8") as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=PORTFOLIO_COLUMNS)
-            writer.writeheader()
-            writer.writerows(rows)
-    except OSError as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to write CSV: {exc}") from exc
+    temp_path = file_path.with_suffix(".tmp")
+    with _portfolio_lock:
+        try:
+            with temp_path.open("w", newline="", encoding="utf-8") as csv_file:
+                writer = csv.DictWriter(csv_file, fieldnames=PORTFOLIO_COLUMNS)
+                writer.writeheader()
+                writer.writerows(rows)
+            temp_path.replace(file_path)
+        except OSError as exc:
+            temp_path.unlink(missing_ok=True)
+            logger.error("Failed to write portfolio CSV: %s", exc)
+            raise HTTPException(status_code=500, detail="데이터 저장에 실패했습니다") from exc
 
 
 def _to_row(item: PortfolioItem) -> dict[str, str]:

@@ -2,11 +2,16 @@ from pathlib import Path
 import logging
 import subprocess
 import sys
+import time
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,6 +29,12 @@ STATIC_DIR = BASE_DIR / "static"
 
 app = FastAPI(title="Investment Assistant WebApp")
 
+# Rate limiting
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,6 +48,15 @@ app.include_router(portfolio_router)
 app.include_router(watchlist_router)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.middleware("http")
+async def audit_logging_middleware(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    elapsed = time.time() - start
+    logger.info("%s %s %s %.3fs", request.method, request.url.path, response.status_code, elapsed)
+    return response
 
 
 def _latest_stem(report_dir: Path) -> str | None:

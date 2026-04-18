@@ -6,6 +6,7 @@
     <title>투자 비서 웹앱</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
     <style>
       :root {
         --bg: #0f172a;
@@ -702,7 +703,7 @@
             .replace(/\bThesis\b/g, "투자논리")
             .replace(/\bWatchlist\b/g, "관심종목")
             .replace(/\bwatchlist\b/g, "관심종목");
-          viewer.innerHTML = marked.parse(localizedContent);
+          viewer.innerHTML = DOMPurify.sanitize(marked.parse(localizedContent));
           colorizeArrows(viewer);
           viewerMeta.textContent = type === "daily" ? `일일 브리핑: ${data.date}` : `주간 리포트: ${data.week}`;
         } catch (error) {

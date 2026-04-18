@@ -1,15 +1,20 @@
 import csv
 import re
 from pathlib import Path
+import logging
+import threading
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import yfinance as yf
 
 from config import WATCHLIST_CSV
 
 router = APIRouter(prefix="/api/watchlist", tags=["watchlist"])
+
+logger = logging.getLogger(__name__)
+_watchlist_lock = threading.Lock()
 
 WATCHLIST_COLUMNS = [
     "ticker",
@@ -25,14 +30,14 @@ WATCHLIST_COLUMNS = [
 
 
 class WatchlistItem(BaseModel):
-    ticker: str
-    company_name: str
-    market: str
-    watch_reason: str
+    ticker: str = Field(..., min_length=1, max_length=20)
+    company_name: str = Field(..., min_length=1, max_length=255)
+    market: str = Field(..., min_length=1, max_length=20)
+    watch_reason: str = Field(default="", max_length=2000)
     ideal_entry: float
-    trigger_condition: str
-    invalidation: str
-    risk_notes: str
+    trigger_condition: str = Field(default="", max_length=2000)
+    invalidation: str = Field(default="", max_length=2000)
+    risk_notes: str = Field(default="", max_length=2000)
     priority: int
 
 
@@ -124,8 +129,8 @@ def _extract_price_from_ticker(yf_ticker: Any, info: dict[str, Any]) -> float | 
                 value = fast_info.get(key) if hasattr(fast_info, "get") else None
                 if value is not None:
                     return float(value)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("fast_info price fetch failed: %s", exc)
 
     try:
         hist = yf_ticker.history(period="5d", interval="1d")
@@ -133,8 +138,8 @@ def _extract_price_from_ticker(yf_ticker: Any, info: dict[str, Any]) -> float | 
             close_series = hist.get("Close")
             if close_series is not None and not close_series.dropna().empty:
                 return float(close_series.dropna().iloc[-1])
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("history price fetch failed: %s", exc)
 
     return None
 
@@ -190,13 +195,18 @@ def _read_rows(file_path: Path) -> list[dict[str, str]]:
 
 def _write_rows(file_path: Path, rows: list[dict[str, str]]) -> None:
     file_path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        with file_path.open("w", newline="", encoding="utf-8") as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=WATCHLIST_COLUMNS)
-            writer.writeheader()
-            writer.writerows(rows)
-    except OSError as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to write CSV: {exc}") from exc
+    temp_path = file_path.with_suffix(".tmp")
+    with _watchlist_lock:
+        try:
+            with temp_path.open("w", newline="", encoding="utf-8") as csv_file:
+                writer = csv.DictWriter(csv_file, fieldnames=WATCHLIST_COLUMNS)
+                writer.writeheader()
+                writer.writerows(rows)
+            temp_path.replace(file_path)
+        except OSError as exc:
+            temp_path.unlink(missing_ok=True)
+            logger.error("Failed to write watchlist CSV: %s", exc)
+            raise HTTPException(status_code=500, detail="데이터 저장에 실패했습니다") from exc
 
 
 def _to_row(item: WatchlistItem) -> dict[str, str]:
