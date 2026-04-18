@@ -65,6 +65,7 @@ class PortfolioSummary(BaseModel):
     total_return_rate_usd: float
     domestic: RegionSummary
     overseas: RegionSummary
+    exchange_rate: float = 1300.0
 
 
 def _normalize_ticker(ticker: str) -> str:
@@ -161,6 +162,22 @@ def _accumulate_region_summary(summary: RegionSummary, currency: str, cost: floa
 def _finalize_region_summary(summary: RegionSummary) -> None:
     summary.return_rate_krw = _safe_return_rate(summary.profit_krw, summary.cost_krw)
     summary.return_rate_usd = _safe_return_rate(summary.profit_usd, summary.cost_usd)
+
+
+def _fetch_exchange_rate() -> float:
+    """yfinance에서 USD/KRW 환율 실시간 조회"""
+    try:
+        ticker = yf.Ticker("USDKRW=X")
+        info = getattr(ticker, "info", {})
+        current_price = info.get("currentPrice")
+        if current_price is not None:
+            rate = _to_float(current_price, default=-1.0)
+            if rate > 0:
+                return rate
+    except Exception:
+        pass
+    
+    return 1300.0
 
 
 def _read_rows(file_path: Path) -> list[dict[str, str]]:
@@ -266,6 +283,7 @@ async def get_portfolio_summary() -> PortfolioSummary:
         total_return_rate_usd=_safe_return_rate(total_profit_usd, total_cost_usd),
         domestic=domestic,
         overseas=overseas,
+        exchange_rate=_fetch_exchange_rate(),
     )
 
 
