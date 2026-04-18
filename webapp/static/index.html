@@ -478,6 +478,15 @@
         return data;
       }
 
+      function getTickerLink(ticker, market) {
+        const t = String(ticker || "").trim().toUpperCase();
+        if (String(market || "").toUpperCase() === "KRX") {
+          const code = t.replace(/\.(KS|KQ)$/, "");
+          return `https://finance.naver.com/item/main.naver?code=${code}`;
+        }
+        return `https://finance.yahoo.com/quote/${t}`;
+      }
+
       function formatNumber(value, digits = 0) {
         const num = Number(value || 0);
         if (Number.isNaN(num)) return "0";
@@ -973,7 +982,7 @@
             .map(
               (row) => `
                 <tr class="border-b border-slate-700/50" data-priority="${row.priority}" data-thesis="${row.thesis}" data-risk-notes="${row.risk_notes}">
-                  <td class="px-3 py-2 font-semibold text-amber-300">${row.ticker || ""}</td>
+                  <td class="px-3 py-2 font-semibold"><a href="${getTickerLink(row.ticker, row.market)}" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:text-amber-100 hover:underline">${row.ticker || ""}</a></td>
                   <td class="px-3 py-2">${row.company_name || ""}</td>
                   <td class="px-3 py-2">${row.market || ""}</td>
                   <td class="px-3 py-2">${row.quantity || ""}</td>
@@ -1216,7 +1225,7 @@
                     <!-- 헤더: Ticker, Market, Priority -->
                     <div class="mb-3 flex items-center justify-between border-b border-slate-700 pb-2">
                       <div class="flex items-center gap-2">
-                        <p class="font-bold text-lg text-amber-300">${row.ticker}</p>
+                        <a href="${getTickerLink(row.ticker, row.market)}" target="_blank" rel="noopener noreferrer" class="font-bold text-lg text-amber-300 hover:text-amber-100 hover:underline">${row.ticker}</a>
                         <span class="text-xs text-slate-500">${row.market}</span>
                         <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded">${priorityLabel}</span>
                       </div>
