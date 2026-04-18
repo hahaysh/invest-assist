@@ -300,7 +300,7 @@ webapp/
 ├── config.py               # 데이터/리포트/브리핑 스크립트 경로
 ├── routers/
 │   ├── reports.py          # 일일/주간 리포트 목록/본문 조회
-│   ├── portfolio.py        # 포트폴리오 CRUD (CSV)
+│   ├── portfolio.py        # 포트폴리오 CRUD + 요약(/api/portfolio/summary)
 │   └── watchlist.py        # 관심종목 CRUD + enrich(yfinance)
 └── static/
     └── index.html          # 단일 SPA (UI + 상태 + API 호출)
@@ -326,6 +326,7 @@ webapp/
 
 - 대시보드: `/api/status`, `/api/reports/daily`, `/api/reports/weekly` 동시 조회
 - 리포트 뷰어: Markdown 렌더링 + 용어 치환(Thesis → 투자논리, watchlist → 관심종목)
+- 포트폴리오 탭: /api/portfolio + /api/portfolio/summary 동시 조회로 요약 카드(국내/해외/전체) 렌더링
 - 포트폴리오 모달: 관심종목 선택 기반 자동채움 + 숫자 타입 검증
 - 관심종목 모달: ticker/company blur 시 enrich 자동채움
 
