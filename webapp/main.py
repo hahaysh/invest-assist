@@ -1,4 +1,5 @@
 from pathlib import Path
+import logging
 import subprocess
 import sys
 
@@ -6,6 +7,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 from config import BRIEFING_SCRIPT, DAILY_REPORTS_DIR, WEEKLY_REPORTS_DIR
 from routers.portfolio import router as portfolio_router
@@ -20,9 +27,9 @@ app = FastAPI(title="Investment Assistant WebApp")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,  # allow_origins=["*"]와 credentials=True 조합은 보안 취약점
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Content-Type"],
 )
 
 app.include_router(reports_router)
@@ -54,7 +61,8 @@ async def health() -> dict[str, str]:
 @app.post("/api/run-briefing")
 async def run_briefing() -> dict[str, str]:
     if not BRIEFING_SCRIPT.exists() or not BRIEFING_SCRIPT.is_file():
-        raise HTTPException(status_code=404, detail=f"Briefing script not found: {BRIEFING_SCRIPT}")
+        logger.warning("Briefing script not found: %s", BRIEFING_SCRIPT)
+        raise HTTPException(status_code=404, detail="브리핑 스크립트를 찾을 수 없습니다")
 
     try:
         subprocess.Popen(
@@ -63,7 +71,8 @@ async def run_briefing() -> dict[str, str]:
             stderr=subprocess.DEVNULL,
         )
     except OSError as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to start briefing script: {exc}") from exc
+        logger.error("Failed to start briefing script: %s", exc)
+        raise HTTPException(status_code=500, detail="브리핑 생성을 시작할 수 없습니다") from exc
 
     return {"status": "started", "message": "브리핑 생성을 시작했습니다."}
 

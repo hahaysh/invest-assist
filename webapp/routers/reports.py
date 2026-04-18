@@ -1,9 +1,12 @@
 from pathlib import Path
+import logging
 import re
 
 from fastapi import APIRouter, HTTPException
 
 from config import DAILY_REPORTS_DIR, WEEKLY_REPORTS_DIR
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
@@ -19,12 +22,25 @@ def _list_markdown_files(directory: Path) -> list[Path]:
 
 def _read_report(directory: Path, stem: str) -> str:
     file_path = directory / f"{stem}.md"
+    # 경로 순회 방어: 실제 경로가 허용된 디렉터리 내에 있는지 검증
+    try:
+        real_path = file_path.resolve()
+        real_dir = directory.resolve()
+        if not str(real_path).startswith(str(real_dir) + "/") and real_path != real_dir:
+            logger.warning("Path traversal attempt blocked: %s", file_path)
+            raise HTTPException(status_code=403, detail="Access denied")
+    except HTTPException:
+        raise
+    except OSError as exc:
+        logger.error("Failed to resolve report path: %s", exc)
+        raise HTTPException(status_code=404, detail="Report not found") from exc
     if not file_path.exists() or not file_path.is_file():
-        raise HTTPException(status_code=404, detail=f"Report not found: {file_path.name}")
+        raise HTTPException(status_code=404, detail="Report not found")
     try:
         return file_path.read_text(encoding="utf-8")
     except OSError as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to read report: {exc}") from exc
+        logger.error("Failed to read report %s: %s", file_path.name, exc)
+        raise HTTPException(status_code=500, detail="Failed to read report") from exc
 
 
 @router.get("/health")
