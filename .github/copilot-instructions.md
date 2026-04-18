@@ -79,3 +79,79 @@ python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 - 최소 변경으로 해결한다.
 - 관련 없는 파일/포맷 변경을 피한다.
 - 기능 변경 시 간단한 검증 방법(재현/확인 단계)을 함께 제시한다.
+
+## 11) API 엔드포인트 (최신)
+
+### Portfolio Router (`/api/portfolio`)
+- `GET /api/portfolio` — 포트폴리오 목록 조회
+- `GET /api/portfolio/summary` — 국내/해외 요약 (2024-4-18 추가: 현재가 기반 수익률)
+- `POST /api/portfolio` — 종목 추가
+- `PUT /api/portfolio/{ticker}` — 종목 수정
+- `DELETE /api/portfolio/{ticker}` — 종목 삭제
+- `GET /api/portfolio/health` — 라우터 헬스체크
+
+### Watchlist Router (`/api/watchlist`)
+- `GET /api/watchlist` — 관심종목 목록 조회
+- `GET /api/watchlist/enrich` — yfinance 기반 자동채움 (query: ticker 또는 company_name)
+- `POST /api/watchlist` — 관심종목 추가
+- `PUT /api/watchlist/{ticker}` — 관심종목 수정
+- `DELETE /api/watchlist/{ticker}` — 관심종목 삭제
+- `GET /api/watchlist/health` — 라우터 헬스체크
+
+### Reports Router (`/api/reports`)
+- `GET /api/reports/daily` — 일일 리포트 목록 (date 배열)
+- `GET /api/reports/daily/{date}` — 특정 일자 리포트 본문
+- `GET /api/reports/weekly` — 주간 리포트 목록 (week 배열)
+- `GET /api/reports/weekly/{week}` — 특정 주 리포트 본문
+- `GET /api/reports/health` — 라우터 헬스체크
+
+### Main App
+- `GET /` — index.html (SPA)
+- `GET /health` — 앱 헬스체크
+- `GET /api/status` — 상태(브리핑 스크립트 존재 여부) + 최신 리포트 키
+- `POST /api/run-briefing` — 브리핑 생성 (generate_briefing.py 실행)
+
+## 12) 데이터 경로 & 운영 정보
+
+### 파일 경로
+```
+~/investment-assistant/
+├── data/
+│   ├── portfolio.csv          # 포트폴리오 (ticker, company_name, market, holding_status, quantity, avg_cost, currency, target_weight, thesis, risk_notes, priority)
+│   ├── watchlist.csv          # 관심종목 (ticker, company_name, market, watch_reason, ideal_entry, trigger_condition, invalidation, risk_notes, priority)
+│   └── investor_profile.md    # 투자자 프로필 (OpenClaw 용)
+├── reports/
+│   ├── daily/                 # 일일 브리핑 (YYYY-MM-DD.md, 매일 09:00 생성)
+│   └── weekly/                # 주간 리포트 (YYYY-Wxx.md, 매주 월요일 09:10 생성)
+└── generate_briefing.py       # OpenClaw 브리핑 생성 스크립트
+```
+
+### 웹앱 서버
+- **포트**: 8001 (Azure VM) / 8000 (로컬 개발)
+- **실행**: `cd webapp && python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000`
+- **서비스**: systemd `investment-webapp` (VM)
+
+### CSV 필드 정의
+**portfolio.csv**:
+- `ticker`: 상장 심볼 (예: 000660, AAPL)
+- `company_name`: 종목명
+- `market`: KRX | NYSE | NASDAQ
+- `holding_status`: active | cash
+- `quantity`: 보유 수량 (정수)
+- `avg_cost`: 평균 단가 (실수)
+- `currency`: KRW | USD
+- `target_weight`: 목표 비중 (실수, 0.0~1.0)
+- `thesis`: 투자 논리
+- `risk_notes`: 위험 요소
+- `priority`: 우선순위 (1~5)
+
+**watchlist.csv**:
+- `ticker`: 상장 심볼
+- `company_name`: 종목명
+- `market`: KRX | NYSE | NASDAQ
+- `watch_reason`: 관심 이유
+- `ideal_entry`: 진입 목표가
+- `trigger_condition`: 진입 조건
+- `invalidation`: 무효 조건
+- `risk_notes`: 위험 요소
+- `priority`: 우선순위 (1~5)
