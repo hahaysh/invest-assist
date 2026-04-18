@@ -236,6 +236,148 @@ python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 - 루트 폴더(`invest-assist`)에서 실행하면 import 오류가 발생할 수 있습니다.
 - `python -c "import main; print('Main module imported successfully')"`로 사전 확인 가능합니다.
 
+## 🧱 웹앱 아키텍처 & 구조
+
+이 웹앱은 **FastAPI 백엔드 + 단일 HTML/JS SPA 프론트엔드 + CSV 파일 저장소**로 구성됩니다.
+운영 환경에서는 `~/investment-assistant` 경로의 데이터/리포트를 그대로 읽고 쓰기 때문에, OpenClaw 자동 브리핑 파이프라인과 자연스럽게 연결됩니다.
+
+### 1) 전체 구성도
+
+```mermaid
+flowchart LR
+  U[사용자 브라우저]\n(대시보드/포트폴리오/관심종목)
+  FE[index.html SPA]\n(상태관리 + fetch API)
+  API[FastAPI app]\n(main.py)
+  R1[reports router]\n/api/reports/*
+  R2[portfolio router]\n/api/portfolio/*
+  R3[watchlist router]\n/api/watchlist/*
+  CSV1[portfolio.csv]
+  CSV2[watchlist.csv]
+  REP1[daily reports/*.md]
+  REP2[weekly reports/*.md]
+  BR[generate_briefing.py]
+  YF[yfinance]
+
+  U --> FE
+  FE --> API
+  API --> R1
+  API --> R2
+  API --> R3
+
+  R1 --> REP1
+  R1 --> REP2
+  R2 --> CSV1
+  R3 --> CSV2
+  R3 --> YF
+
+  FE -->|POST /api/run-briefing| API
+  API --> BR
+  BR --> REP1
+  BR --> REP2
+```
+
+### 2) 백엔드 구조
+
+```text
+webapp/
+├── main.py                 # FastAPI 앱 생성, 라우터 등록, 정적 파일 제공
+├── config.py               # 데이터/리포트/브리핑 스크립트 경로
+├── routers/
+│   ├── reports.py          # 일일/주간 리포트 목록/본문 조회
+│   ├── portfolio.py        # 포트폴리오 CRUD (CSV)
+│   └── watchlist.py        # 관심종목 CRUD + enrich(yfinance)
+└── static/
+    └── index.html          # 단일 SPA (UI + 상태 + API 호출)
+```
+
+핵심 포인트:
+
+- `main.py`에서 CORS, 라우터, `/static` 마운트, `/api/run-briefing`, `/api/status`를 관리합니다.
+- `config.py`는 운영 데이터 루트(`~/investment-assistant/...`)를 단일 소스로 정의합니다.
+- 각 라우터는 파일 I/O 실패를 HTTP 예외로 변환해 프론트에서 사용자 메시지로 표시할 수 있게 합니다.
+
+### 3) 프론트엔드 구조(SPA)
+
+`static/index.html` 한 파일에 화면/스타일/상태/이벤트/네트워크 호출이 통합되어 있습니다.
+
+주요 상태:
+
+- `currentTab`, `viewerType`
+- `portfolioEditTicker`, `watchlistEditTicker`
+- `portfolioAutofillLoading`, `watchlistAutofillLoading`
+
+주요 동작:
+
+- 대시보드: `/api/status`, `/api/reports/daily`, `/api/reports/weekly` 동시 조회
+- 리포트 뷰어: Markdown 렌더링 + 용어 치환(Thesis → 투자논리, watchlist → 관심종목)
+- 포트폴리오 모달: 관심종목 선택 기반 자동채움 + 숫자 타입 검증
+- 관심종목 모달: ticker/company blur 시 enrich 자동채움
+
+### 4) 데이터 흐름
+
+#### A. 대시보드 로딩
+
+1. SPA 초기화 시 `refreshDashboard()` 호출
+2. 상태/리포트 목록 API 병렬 호출
+3. 최신 일자 표시 + 선택 박스 구성
+4. 선택된 일자의 리포트 본문 조회 및 렌더링
+
+#### B. 포트폴리오 자동채움(관심종목 기반)
+
+1. 포트폴리오 모달에서 관심종목 선택
+2. `/api/watchlist`와 `/api/portfolio`를 함께 조회
+3. 이미 보유 중인 ticker는 선택 목록에서 제외
+4. 선택 ticker 기준 `/api/watchlist/enrich` 호출
+5. 투자논리/진입 관찰 포인트/무효화 조건 등을 조합해 기본 문구 생성
+6. 자동채움 중 저장/취소 버튼 잠금, 완료 후 해제
+
+#### C. 관심종목 자동채움
+
+1. 신규 모달에서 ticker 또는 종목명 입력 후 blur
+2. `/api/watchlist/enrich` 호출
+3. 시장/진입가/관심 이유/진입 조건/부정 조건/위험 노트를 기본 채움
+4. **빈 필드만 채움**(사용자 입력값 보존)
+5. 자동채움 중 저장/취소 버튼 잠금, 완료 후 해제
+
+### 5) API 레이어 역할
+
+- `GET /api/reports/daily`, `GET /api/reports/weekly`: 파일명 규칙 기반 목록 조회
+- `GET /api/reports/daily/{date}`, `GET /api/reports/weekly/{week}`: 본문 조회
+- `GET/POST/PUT/DELETE /api/portfolio`: 포트폴리오 CSV CRUD
+- `GET/POST/PUT/DELETE /api/watchlist`: 관심종목 CSV CRUD
+- `GET /api/watchlist/enrich`: yfinance 기반 보강 데이터 생성
+- `POST /api/run-briefing`: 브리핑 생성 스크립트 비동기 실행
+- `GET /api/status`: 최근 일일/주간 리포트 키 반환
+
+### 6) 저장소(파일) 설계
+
+- `portfolio.csv`: 포트폴리오 원본
+- `watchlist.csv`: 관심종목 원본
+- `reports/daily/*.md`, `reports/weekly/*.md`: 브리핑/리포트 결과
+
+장점:
+
+- DB 없이도 운영/백업/이식이 단순
+- OpenClaw 스크립트와 동일 데이터 소스를 공유
+
+주의:
+
+- 동시 다중 사용자 편집 환경에서는 CSV 기반 특성상 충돌 관리가 필요합니다.
+
+### 7) 확장 포인트
+
+- 인증/권한: FastAPI dependency 기반 토큰 인증 추가
+- 저장소 교체: CSV 레이어를 DB(SQLModel/SQLite/PostgreSQL)로 교체
+- API 분리: `static/index.html`의 네트워크 로직을 별도 JS 모듈로 분리
+- 운영 강화: structured logging, request ID, 에러 추적(App Insights 등)
+
+### 8) 신규 기여자 빠른 이해 순서
+
+1. `webapp/main.py`에서 엔트리/라우터 구성을 확인
+2. `webapp/routers/*.py`에서 API 계약과 파일 I/O 정책 확인
+3. `webapp/static/index.html`에서 탭 전환/모달/자동채움 흐름 확인
+4. README의 API 목록과 로컬 실행 절차로 실제 호출 테스트
+
 ## 🖥️ 웹앱 기능 요약
 
 - 대시보드: 최신 일일/주간 리포트 조회 및 목록 확인
