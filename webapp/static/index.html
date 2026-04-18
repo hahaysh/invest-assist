@@ -1202,26 +1202,56 @@
 
           const html = rows
             .map(
-              (row) => `
-                <div class="rounded-lg border border-slate-700 p-4" style="background-color: var(--card)">
-                  <div class="mb-3 flex items-center justify-between">
-                    <div>
-                      <p class="font-semibold text-amber-300">${row.ticker}</p>
-                      <p class="text-sm text-slate-400">${row.company_name}</p>
+              (row) => {
+                const priorityLabel = `P${row.priority}`;
+                const triggerCondition = row.trigger_condition || "-";
+                const invalidation = row.invalidation || "-";
+                return `
+                  <div class="rounded-xl border border-slate-700 p-4" style="background-color: var(--card)">
+                    <!-- 헤더: Ticker, Market, Priority -->
+                    <div class="mb-3 flex items-center justify-between border-b border-slate-700 pb-2">
+                      <div class="flex items-center gap-2">
+                        <p class="font-bold text-lg text-amber-300">${row.ticker}</p>
+                        <span class="text-xs text-slate-500">${row.market}</span>
+                        <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded">${priorityLabel}</span>
+                      </div>
+                      <div class="flex gap-1">
+                        <button onclick="openWatchlistModal('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-amber-500/20 hover:text-amber-300">수정</button>
+                        <button onclick="deleteWatchlist('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-red-500/20 hover:text-red-300">삭제</button>
+                      </div>
                     </div>
-                    <div class="flex gap-1">
-                      <button onclick="openWatchlistModal('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-amber-500/20 hover:text-amber-300">수정</button>
-                      <button onclick="deleteWatchlist('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-red-500/20 hover:text-red-300">삭제</button>
+                    
+                    <!-- 종목명 -->
+                    <p class="mb-3 text-lg font-semibold text-slate-100">${row.company_name}</p>
+                    
+                    <!-- 세부 정보 -->
+                    <div class="space-y-2 text-xs text-slate-300">
+                      <div>
+                        <p class="text-slate-500 text-xs mb-0.5">관심이유</p>
+                        <p class="text-sm">${row.watch_reason || "-"}</p>
+                      </div>
+                      <div class="grid grid-cols-2 gap-2">
+                        <div>
+                          <p class="text-slate-500 text-xs mb-0.5">진입 목표가</p>
+                          <p class="font-semibold text-amber-300">${formatNumber(row.ideal_entry, 2)}</p>
+                        </div>
+                        <div>
+                          <p class="text-slate-500 text-xs mb-0.5">진입 조건</p>
+                          <p class="text-sm">${triggerCondition}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p class="text-slate-500 text-xs mb-0.5">무효 조건</p>
+                        <p class="text-sm">${invalidation}</p>
+                      </div>
+                      <div>
+                        <p class="text-slate-500 text-xs mb-0.5">위험 요소</p>
+                        <p class="text-sm">${row.risk_notes || "-"}</p>
+                      </div>
                     </div>
                   </div>
-                  <div class="space-y-1 text-xs text-slate-400">
-                    <p><strong>시장:</strong> ${row.market}</p>
-                    <p><strong>진입가:</strong> ${row.ideal_entry}</p>
-                    <p><strong>우선순위:</strong> ${row.priority}</p>
-                    <p><strong>관심:</strong> ${row.watch_reason}</p>
-                  </div>
-                </div>
-              `,
+                `;
+              },
             )
             .join("");
 
