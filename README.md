@@ -2,6 +2,18 @@
 
 Azure Linux VM에서 OpenClaw를 활용해 매일 자동으로 투자 브리핑을 생성하고 Telegram으로 받는 시스템입니다.
 
+## 🧭 README 정리 순서 (OpenClaw → Webapp)
+
+1. OpenClaw 공통 개요
+2. OpenClaw 설치/운영 절차
+3. Webapp 배포/실행
+4. Webapp 아키텍처/기능
+5. 작업자용 프롬프트 템플릿
+
+아래 문서는 위 순서대로 읽으면 바로 따라할 수 있도록 구성되어 있습니다.
+
+## 1) OpenClaw 공통 개요
+
 ## 📋 완성된 기능
 
 - 📊 **매일 09:00 KST** — 일일 투자 브리핑 자동 생성 + Telegram 전송
@@ -68,6 +80,8 @@ investment-assistant/
 ## ⚠️ 알려진 문제 및 팁
 
 [troubleshooting.md](./openclaw/docs/troubleshooting.md) 참고
+
+## 2) Webapp 배포/운영
 
 ## 🌐 Azure Linux VM 웹앱 배포 가이드 (복사/붙여넣기)
 
@@ -235,6 +249,8 @@ python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 - `main.py`가 있는 `webapp` 폴더에서 실행해야 합니다.
 - 루트 폴더(`invest-assist`)에서 실행하면 import 오류가 발생할 수 있습니다.
 - `python -c "import main; print('Main module imported successfully')"`로 사전 확인 가능합니다.
+
+## 3) Webapp 아키텍처/기능
 
 ## 🧱 웹앱 아키텍처 & 구조
 
