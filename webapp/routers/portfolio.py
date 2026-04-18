@@ -171,19 +171,53 @@ def _finalize_region_summary(summary: RegionSummary) -> None:
 
 
 def _fetch_exchange_rate() -> float:
-    """yfinance에서 USD/KRW 환율 실시간 조회"""
+    """yfinance에서 USD/KRW 환율 실시간 조회.
+    조회 우선순위: info(regularMarketPrice/previousClose)
+               → fast_info(lastPrice) → history close
+    외환 티커는 info.currentPrice 가 None인 경우가 많아 단독 사용 불가.
+    """
+    _FALLBACK = 1300.0
     try:
         ticker = yf.Ticker("USDKRW=X")
-        info = getattr(ticker, "info", {})
-        current_price = info.get("currentPrice")
-        if current_price is not None:
-            rate = _to_float(current_price, default=-1.0)
-            if rate > 0:
-                return rate
+
+        # 1) info 딕셔너리
+        info = getattr(ticker, "info", {}) or {}
+        for key in ("currentPrice", "regularMarketPrice", "previousClose"):
+            val = info.get(key)
+            if val is not None:
+                rate = _to_float(val, default=-1.0)
+                if rate > 0:
+                    logger.debug("Exchange rate from info[%s]: %.4f", key, rate)
+                    return rate
+
+        # 2) fast_info 객체 — lastPrice 가 가장 신뢰성 높음
+        fast_info = getattr(ticker, "fast_info", None)
+        if fast_info is not None:
+            for key in ("lastPrice", "regularMarketPrice", "previousClose"):
+                val = (
+                    fast_info.get(key)
+                    if hasattr(fast_info, "get")
+                    else getattr(fast_info, key, None)
+                )
+                if val is not None:
+                    rate = _to_float(val, default=-1.0)
+                    if rate > 0:
+                        logger.debug("Exchange rate from fast_info[%s]: %.4f", key, rate)
+                        return rate
+
+        # 3) history 종가
+        hist = ticker.history(period="1d")
+        if not hist.empty:
+            close = _to_float(hist["Close"].iloc[-1], default=-1.0)
+            if close > 0:
+                logger.debug("Exchange rate from history close: %.4f", close)
+                return close
+
     except Exception as exc:
         logger.warning("Exchange rate fetch failed: %s", exc)
 
-    return 1300.0
+    logger.warning("Exchange rate fallback to %.1f", _FALLBACK)
+    return _FALLBACK
 
 
 def _read_rows(file_path: Path) -> list[dict[str, str]]:

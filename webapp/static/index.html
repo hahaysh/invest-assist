@@ -589,7 +589,7 @@
             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-300">전체 요약 (원화 기준)</p>
             <div class="space-y-1 text-xs text-slate-300">
               <p>보유 종목 수: <strong>${formatNumber(safeSummary.total_count)}</strong> (국내: ${formatNumber(safeSummary.domestic_count)}, 해외: ${formatNumber(safeSummary.overseas_count)})</p>
-              <p>환율: <strong>${formatNumber(exchangeRate, 0)} (USD/KRW)</strong></p>
+              <p>환율: <strong>${formatNumber(exchangeRate, 2)} (USD/KRW)</strong></p>
               <p>원가 합계: <strong>${formatMoney("KRW", totalCostKrwConv)}</strong></p>
               <p>평가 금액: <strong>${formatMoney("KRW", totalMarketValueKrwConv)}</strong></p>
               <p>평가 손익: <strong>${formatMoney("KRW", totalProfitKrwConv)}</strong></p>
