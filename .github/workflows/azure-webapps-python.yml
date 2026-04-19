@@ -1,4 +1,4 @@
-name: Deploy Webapp to Azure Linux VM
+name: Deploy Webapp1 to Azure Linux VM
 
 on:
   push:
@@ -36,7 +36,10 @@ concurrency:
 env:
   DEPLOY_TARGET_DIR: /home/hahaysh/webapp1/webapp
   VENV_PYTHON: /home/hahaysh/webapp1/venv/bin/python
-  SERVICE_NAME: investment-webapp
+
+  # ✅ webapp1은 systemd "user" 서비스로 운영 중이므로, user service 이름에 맞춰야 함
+  SERVICE_NAME: webapp1-uvicorn
+
   APP_PORT: "8001"
   BACKUP_RETENTION_DAYS: "7"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
@@ -125,7 +128,7 @@ jobs:
             --exclude="*.pyc" \
             -e "ssh -i ~/.ssh/deploy_key" \
             ./webapp/ \
-            "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}:$DEPLOY_TARGET_DIR/"
+            "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}:${{ env.DEPLOY_TARGET_DIR }}/"
 
       - name: Rsync webapp to VM
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
@@ -136,7 +139,7 @@ jobs:
             --exclude="*.pyc" \
             -e "ssh -i ~/.ssh/deploy_key" \
             ./webapp/ \
-            "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}:$DEPLOY_TARGET_DIR/"
+            "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}:${{ env.DEPLOY_TARGET_DIR }}/"
 
       - name: Install Python dependencies
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
@@ -151,15 +154,24 @@ jobs:
             "$VENV_PYTHON" -m pip install -r requirements.txt
           '
 
-      - name: Restart service
+      - name: Restart webapp1 (systemd user service)
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
             set -euo pipefail
-            SERVICE_NAME="investment-webapp"
-            sudo systemctl restart "$SERVICE_NAME"
-            sudo systemctl is-active --quiet "$SERVICE_NAME"
+            SERVICE_NAME="webapp1-uvicorn"
+            APP_PORT="8001"
+
+            # ✅ 과거 수동 실행 uvicorn(8001) 잔존 시 포트 충돌/이중실행 방지
+            pkill -f "uvicorn.*--port[[:space:]]*$APP_PORT" || true
+            pkill -f "uvicorn.*:${APP_PORT}" || true
+            pkill -f "uvicorn.*8001" || true
+
+            # ✅ user service 재시작
+            systemctl --user daemon-reload
+            systemctl --user restart "${SERVICE_NAME}.service"
+            systemctl --user is-active --quiet "${SERVICE_NAME}.service"
           '
 
       - name: Health and API checks
@@ -189,27 +201,36 @@ jobs:
             set -euo pipefail
             DEPLOY_TARGET_DIR="/home/hahaysh/webapp1/webapp"
             VENV_PYTHON="/home/hahaysh/webapp1/venv/bin/python"
-            SERVICE_NAME="investment-webapp"
+            SERVICE_NAME="webapp1-uvicorn"
+            APP_PORT="8001"
             BACKUP_DIR="$HOME/webapp-backups/webapp-${{ steps.meta.outputs.backup_ts }}"
+
             if [ ! -d "$BACKUP_DIR" ]; then
               echo "Rollback backup not found: $BACKUP_DIR"
               exit 1
             fi
+
             rm -rf "$DEPLOY_TARGET_DIR"
             cp -a "$BACKUP_DIR" "$DEPLOY_TARGET_DIR"
+
             cd "$DEPLOY_TARGET_DIR"
             "$VENV_PYTHON" -m pip install -r requirements.txt
-            sudo systemctl restart "$SERVICE_NAME"
-            sudo systemctl is-active --quiet "$SERVICE_NAME"
+
+            pkill -f "uvicorn.*--port[[:space:]]*$APP_PORT" || true
+            pkill -f "uvicorn.*8001" || true
+
+            systemctl --user daemon-reload
+            systemctl --user restart "${SERVICE_NAME}.service"
+            systemctl --user is-active --quiet "${SERVICE_NAME}.service"
           '
 
-      - name: Service logs
+      - name: Service logs (webapp1-uvicorn)
         if: ${{ always() }}
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOST }}" '
-            SERVICE_NAME="investment-webapp"
-            sudo journalctl -u "$SERVICE_NAME" -n 80 --no-pager || true
+            SERVICE_NAME="webapp1-uvicorn"
+            journalctl --user -u "${SERVICE_NAME}.service" -n 120 --no-pager || true
           '
 
       - name: Cleanup old backups
@@ -223,3 +244,4 @@ jobs:
               find "$HOME/webapp-backups" -mindepth 1 -maxdepth 1 -type d -mtime +"$BACKUP_RETENTION_DAYS" -exec rm -rf {} +
             fi
           '
+``
