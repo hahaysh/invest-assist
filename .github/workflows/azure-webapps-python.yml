@@ -244,4 +244,3 @@ jobs:
               find "$HOME/webapp-backups" -mindepth 1 -maxdepth 1 -type d -mtime +"$BACKUP_RETENTION_DAYS" -exec rm -rf {} +
             fi
           '
-``
