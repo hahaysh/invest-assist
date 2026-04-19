@@ -369,7 +369,7 @@ webapp/
 - `GET /api/reports/daily/{date}`, `GET /api/reports/weekly/{week}`: 본문 조회
 - `GET/POST/PUT/DELETE /api/portfolio`: 포트폴리오 CSV CRUD
 - `GET/POST/PUT/DELETE /api/watchlist`: 관심종목 CSV CRUD
-- `GET /api/watchlist/enrich`: yfinance 기반 보강 데이터 생성
+- `GET /api/watchlist/enrich`: yfinance 기반 보강 데이터 생성 (`ticker` 또는 `company_name`, 선택 `lang=ko|en|ja|zh|fr`)
 - `POST /api/run-briefing`: 브리핑 생성 스크립트 비동기 실행
 - `GET /api/status`: 최근 일일/주간 리포트 키 반환
 
@@ -417,7 +417,7 @@ webapp/
 - PUT /api/portfolio/{ticker}
 - DELETE /api/portfolio/{ticker}
 - GET /api/watchlist
-- GET /api/watchlist/enrich?ticker=...
+- GET /api/watchlist/enrich?ticker=...&lang=en
 - POST /api/watchlist
 - PUT /api/watchlist/{ticker}
 - DELETE /api/watchlist/{ticker}

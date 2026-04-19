@@ -1492,7 +1492,7 @@
           }
 
           try {
-            const enriched = await apiFetch(`/api/watchlist/enrich?ticker=${encodeURIComponent(ticker)}`);
+            const enriched = await apiFetch(`/api/watchlist/enrich?ticker=${encodeURIComponent(ticker)}&lang=${encodeURIComponent(state.language)}`);
             if (enriched.news_summary) {
               thesisParts.push(`${t("newsSummary")}: ${enriched.news_summary}`);
             }
@@ -1733,6 +1733,7 @@
           const params = new URLSearchParams();
           if (normalizedTicker) params.set("ticker", normalizedTicker);
           if (!normalizedTicker && normalizedCompany) params.set("company_name", normalizedCompany);
+          params.set("lang", state.language);
 
           const enriched = await apiFetch(`/api/watchlist/enrich?${params.toString()}`);
 

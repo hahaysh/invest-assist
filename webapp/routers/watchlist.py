@@ -28,6 +28,8 @@ WATCHLIST_COLUMNS = [
     "priority",
 ]
 
+SUPPORTED_TEMPLATE_LANGUAGES = {"ko", "en", "ja", "zh", "fr"}
+
 
 class WatchlistItem(BaseModel):
     ticker: str = Field(..., min_length=1, max_length=20)
@@ -153,25 +155,117 @@ def _headline(news_items: list[dict[str, Any]]) -> str:
     return " / ".join(titles)
 
 
-def _build_templates(company: str, market: str, price: float | None, news_summary: str) -> dict[str, str]:
-    if market == "KRX":
-        reason = f"{company} 밸류/성장 모니터링" if not news_summary else f"{company} 모멘텀: {news_summary}"
-        trigger = (
-            f"가격 {price:,.0f}원 부근 지지 + 거래량 증가 확인"
-            if price is not None
-            else "실적 가이던스 상향 또는 이익률 개선 확인"
+def _normalize_language(lang: str | None) -> str:
+    raw = (lang or "").strip().lower()
+    if not raw:
+        return "ko"
+    base = raw.split("-", 1)[0].split("_", 1)[0]
+    return base if base in SUPPORTED_TEMPLATE_LANGUAGES else "ko"
+
+
+def _build_templates(company: str, market: str, price: float | None, news_summary: str, lang: str | None = None) -> dict[str, str]:
+    language = _normalize_language(lang)
+    is_krx = market == "KRX"
+
+    if language == "en":
+        reason = f"Monitor {company} valuation and growth" if is_krx and not news_summary else (
+            f"{company} momentum: {news_summary}" if is_krx else (
+                f"Track {company}'s growth sustainability" if not news_summary else f"{company} news momentum: {news_summary}"
+            )
         )
-        invalidation = "핵심 사업 성장 둔화 또는 분기 실적 가이던스 하향"
-        risk = "정책/규제 이슈 및 밸류에이션 부담"
+        trigger = (
+            f"Price holds near KRW {price:,.0f} with volume pickup" if is_krx and price is not None else
+            "Upward earnings guidance or margin improvement" if is_krx else
+            f"Price holds near ${price:,.2f} with earnings surprise" if price is not None else
+            "Revenue re-acceleration and guidance upgrade"
+        )
+        invalidation = (
+            "Core business growth slows or quarterly guidance is cut" if is_krx else
+            "Growth deceleration or delay in AI/core business monetization"
+        )
+        risk = (
+            "Policy/regulatory issues and valuation pressure" if is_krx else
+            "Valuation risk, rates, and regulation"
+        )
+    elif language == "ja":
+        reason = f"{company}のバリュエーション/成長を監視" if is_krx and not news_summary else (
+            f"{company}のモメンタム: {news_summary}" if is_krx else (
+                f"{company}の成長持続性を点検" if not news_summary else f"{company}のニュースモメンタム: {news_summary}"
+            )
+        )
+        trigger = (
+            f"価格が{price:,.0f}KRW付近で下支え + 出来高増加を確認" if is_krx and price is not None else
+            "業績ガイダンス上方修正または利益率改善を確認" if is_krx else
+            f"価格が${price:,.2f}付近で下支え + 決算サプライズを確認" if price is not None else
+            "売上成長率の再加速とガイダンス上方修正を確認"
+        )
+        invalidation = (
+            "主力事業の成長鈍化、または四半期ガイダンス下方修正" if is_krx else
+            "成長率急減、またはAI/中核事業の収益化遅延"
+        )
+        risk = (
+            "政策/規制リスクとバリュエーション負担" if is_krx else
+            "バリュエーション負担、金利・規制リスク"
+        )
+    elif language == "zh":
+        reason = f"跟踪{company}估值与增长" if is_krx and not news_summary else (
+            f"{company}动量: {news_summary}" if is_krx else (
+                f"评估{company}增长持续性" if not news_summary else f"{company}新闻动量: {news_summary}"
+            )
+        )
+        trigger = (
+            f"价格在{price:,.0f}KRW附近企稳且成交量放大" if is_krx and price is not None else
+            "确认业绩指引上调或利润率改善" if is_krx else
+            f"价格在${price:,.2f}附近企稳且业绩超预期" if price is not None else
+            "收入增速回升并上调指引"
+        )
+        invalidation = (
+            "核心业务增速放缓或季度指引下调" if is_krx else
+            "增速明显下滑或AI/核心业务变现延迟"
+        )
+        risk = (
+            "政策/监管因素与估值压力" if is_krx else
+            "估值压力、利率与监管风险"
+        )
+    elif language == "fr":
+        reason = f"Surveiller la valorisation et la croissance de {company}" if is_krx and not news_summary else (
+            f"Momentum de {company} : {news_summary}" if is_krx else (
+                f"Vérifier la durabilité de la croissance de {company}" if not news_summary else f"Momentum actualités de {company} : {news_summary}"
+            )
+        )
+        trigger = (
+            f"Le cours tient près de {price:,.0f} KRW avec hausse des volumes" if is_krx and price is not None else
+            "Relèvement du guidance ou amélioration des marges" if is_krx else
+            f"Le cours tient près de ${price:,.2f} avec surprise sur les résultats" if price is not None else
+            "Rebond de la croissance du chiffre d'affaires et relèvement du guidance"
+        )
+        invalidation = (
+            "Ralentissement du cœur d'activité ou baisse du guidance trimestriel" if is_krx else
+            "Décélération de la croissance ou retard de monétisation IA/cœur d'activité"
+        )
+        risk = (
+            "Enjeux politiques/réglementaires et pression de valorisation" if is_krx else
+            "Risque de valorisation, taux et réglementation"
+        )
     else:
-        reason = f"{company} 성장 지속 여부 점검" if not news_summary else f"{company} 뉴스 모멘텀: {news_summary}"
-        trigger = (
-            f"가격 ${price:,.2f} 부근 지지 + 실적 서프라이즈 확인"
-            if price is not None
-            else "매출 성장률 반등 및 가이던스 상향 확인"
-        )
-        invalidation = "성장률 급감 또는 AI/핵심 사업 수익화 지연"
-        risk = "밸류에이션 부담, 금리 및 규제 리스크"
+        if is_krx:
+            reason = f"{company} 밸류/성장 모니터링" if not news_summary else f"{company} 모멘텀: {news_summary}"
+            trigger = (
+                f"가격 {price:,.0f}원 부근 지지 + 거래량 증가 확인"
+                if price is not None
+                else "실적 가이던스 상향 또는 이익률 개선 확인"
+            )
+            invalidation = "핵심 사업 성장 둔화 또는 분기 실적 가이던스 하향"
+            risk = "정책/규제 이슈 및 밸류에이션 부담"
+        else:
+            reason = f"{company} 성장 지속 여부 점검" if not news_summary else f"{company} 뉴스 모멘텀: {news_summary}"
+            trigger = (
+                f"가격 ${price:,.2f} 부근 지지 + 실적 서프라이즈 확인"
+                if price is not None
+                else "매출 성장률 반등 및 가이던스 상향 확인"
+            )
+            invalidation = "성장률 급감 또는 AI/핵심 사업 수익화 지연"
+            risk = "밸류에이션 부담, 금리 및 규제 리스크"
 
     return {
         "watch_reason": reason,
@@ -229,7 +323,11 @@ async def watchlist_health() -> dict[str, str]:
 
 
 @router.get("/enrich")
-async def enrich_watchlist_item(ticker: str | None = None, company_name: str | None = None) -> dict[str, str | float | None]:
+async def enrich_watchlist_item(
+    ticker: str | None = None,
+    company_name: str | None = None,
+    lang: str | None = None,
+) -> dict[str, str | float | None]:
     resolved = _resolve_ticker(ticker, company_name)
 
     best: dict[str, Any] | None = None
@@ -281,7 +379,7 @@ async def enrich_watchlist_item(ticker: str | None = None, company_name: str | N
 
     market = _infer_market(used_symbol, info)
     news_summary = _headline(news_items)
-    templates = _build_templates(company, market, price, news_summary)
+    templates = _build_templates(company, market, price, news_summary, lang=lang)
 
     return {
         "ticker": _display_ticker(used_symbol),
