@@ -1,5 +1,7 @@
 # 🦞 OpenClaw 개인 투자 비서 세팅 가이드
 
+> 🇺🇸 [English version available → README.en.md](./README.en.md)
+
 Azure Linux VM에서 OpenClaw를 활용해 매일 자동으로 투자 브리핑을 생성하고 Telegram으로 받는 시스템입니다.
 
 ## 🧭 README 정리 순서 (OpenClaw → Webapp)

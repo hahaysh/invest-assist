@@ -1,163 +1,163 @@
 # Copilot Instructions For invest-assist
 
-이 파일은 이 저장소에서 GitHub Copilot이 항상 따를 기본 규칙을 정의합니다.
+This file defines the baseline rules that GitHub Copilot always follows in this repository.
 
-## 1) 프로젝트 목적
+## 1) Project Purpose
 
-- 이 저장소는 OpenClaw + FastAPI 웹앱 기반 투자 비서 시스템입니다.
-- 운영 데이터는 `~/investment-assistant` 경로의 CSV/리포트 파일을 사용합니다.
-- 웹앱은 `webapp` 폴더의 FastAPI 백엔드와 단일 SPA(`static/index.html`)로 구성됩니다.
+- This repository is an investment assistant system built on OpenClaw + FastAPI webapp.
+- Production data uses CSV/report files located at `~/investment-assistant`.
+- The webapp consists of a FastAPI backend in the `webapp` folder and a single SPA (`static/index.html`).
 
-## 2) 작업 우선순위
+## 2) Work Priorities
 
-1. 기존 동작 보존 (회귀 방지)
-2. 사용자 입력 데이터 무결성
-3. 사용자 친화적 오류 메시지
-4. README와 구현 동기화
+1. Preserve existing behavior (prevent regression)
+2. User input data integrity
+3. User-friendly error messages
+4. Keep README in sync with implementation
 
-## 3) 용어 규칙 (중요)
+## 3) Terminology Rules (Important)
 
-- 사용자 노출 UI/문서: `관심종목` 사용
-- 내부 API/경로/파일명: `watchlist` 유지
-- 리포트 표시 용어:
-  - `보유 종목 현황` 대신 `포트 폴리오 현황`
-  - `Thesis` 대신 `투자논리`
+- User-facing UI/docs: use `Watchlist` (관심종목)
+- Internal API/paths/filenames: keep `watchlist`
+- Report display terms:
+  - Use `Portfolio Status` instead of `Holdings Status`
+  - Use `Investment Logic` instead of `Thesis`
 
-## 4) 자동채움(autofill) 규칙
+## 4) Autofill Rules
 
-- 기존 입력값을 덮어쓰지 말고, 빈 필드만 채운다.
-- 자동채움 진행 중 저장/취소 버튼을 비활성화한다.
-- 자동채움 완료/실패 후 버튼 상태를 반드시 복구한다.
-- 수정 모드와 신규 모드 동작 차이를 유지한다.
+- Never overwrite existing user input; fill empty fields only.
+- Disable Save/Cancel buttons during autofill.
+- Always restore button state after autofill completes or fails.
+- Maintain behavioral differences between edit mode and new mode.
 
-## 5) 검증 규칙
+## 5) Validation Rules
 
-- 숫자 필드 입력은 문자열이라도 숫자 변환 후 검증한다.
-- 정수/실수 필드 타입 검증 실패 시 사용자 이해 가능한 메시지를 반환한다.
-- API 오류 detail은 UI에 그대로 객체 형태로 노출하지 않는다.
+- Validate numeric field input by converting strings to numbers before checking.
+- Return user-understandable messages when integer/float field type validation fails.
+- Never expose raw API error `detail` objects directly in the UI.
 
-## 6) 백엔드 규칙
+## 6) Backend Rules
 
-- FastAPI 라우터 책임을 유지한다:
-  - `routers/reports.py`: 리포트 목록/본문
-  - `routers/portfolio.py`: 포트폴리오 CRUD
-  - `routers/watchlist.py`: 관심종목 CRUD + enrich
-- 파일 I/O 실패는 HTTPException으로 명시적으로 처리한다.
-- CSV 파일이 없을 때는 가능한 범위에서 안정적으로 동작하도록 한다.
+- Maintain FastAPI router responsibilities:
+  - `routers/reports.py`: report list/body
+  - `routers/portfolio.py`: portfolio CRUD
+  - `routers/watchlist.py`: watchlist CRUD + enrich
+- Handle file I/O failures explicitly with HTTPException.
+- Operate gracefully when CSV files are missing where possible.
 
-## 7) 프론트엔드 규칙
+## 7) Frontend Rules
 
-- 주요 상태 변수(`portfolioAutofillLoading`, `watchlistAutofillLoading`)를 기준으로 버튼/모달 제어를 유지한다.
-- API 호출은 공통 fetch 래퍼와 일관된 에러 처리 패턴을 사용한다.
-- 대시보드 리포트 렌더링 시 용어 치환 규칙을 유지한다.
-- **다국어(i18n) 규칙**:
-  - UI 문자열은 `t(key)` 함수를 통해 번역 사전에서 조회한다. 하드코딩 금지.
-  - 새 UI 문자열 추가 시 5개 언어(ko/en/ja/zh/fr) 모두 `TRANSLATIONS` 사전에 키를 추가한다.
-  - 언어 선택은 `state.language`로 관리하며 `setLanguage()`를 통해서만 변경한다.
-  - 정적 DOM 요소는 `data-i18n` 속성, 동적 텍스트는 `t()` 함수로 처리한다.
-  - 자동채움 enrich 호출 시 `lang=state.language`를 쿼리에 포함해 서버 생성 문구도 현재 언어로 받는다.
+- Control buttons/modals based on key state variables (`portfolioAutofillLoading`, `watchlistAutofillLoading`).
+- Use a common fetch wrapper with a consistent error handling pattern for all API calls.
+- Apply term substitution rules when rendering dashboard reports.
+- **i18n (multi-language) rules**:
+  - All UI strings must be retrieved from the translation dictionary via the `t(key)` function. No hardcoding.
+  - When adding new UI strings, add keys for all 5 languages (ko/en/ja/zh/fr) to the `TRANSLATIONS` dictionary.
+  - Language selection is managed via `state.language` and changed only through `setLanguage()`.
+  - Static DOM elements use `data-i18n` attributes; dynamic text uses the `t()` function.
+  - Always include `lang=state.language` in watchlist enrich calls so server-generated text is also in the current language.
 
-## 8) 문서 업데이트 규칙
+## 8) Documentation Update Rules
 
-아래 항목이 변경되면 `README.md`도 함께 업데이트한다.
+Update `README.md` (both `README.md` and `README.en.md`) when any of the following change:
 
-- 사용자 기능 흐름
-- API 엔드포인트
-- 용어 정책
-- 배포/실행 절차
+- User feature flows
+- API endpoints
+- Terminology policy
+- Deployment/execution procedures
 
-README는 `OpenClaw -> Webapp` 순서의 문서 동선을 유지한다.
+Maintain the `OpenClaw -> Webapp` document flow order in README.
 
-## 9) 실행/디버그 규칙
+## 9) Execution / Debug Rules
 
-- 로컬 실행 시 반드시 `webapp` 폴더에서 실행한다.
-- `Could not import module "main"` 오류가 보이면 실행 경로를 먼저 점검한다.
+- Always run from the `webapp` folder for local execution.
+- If you see `Could not import module "main"`, check the execution path first.
 
-예시:
+Example:
 
 ```powershell
 cd webapp
 python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-## 10) 변경 원칙
+## 10) Change Principles
 
-- 최소 변경으로 해결한다.
-- 관련 없는 파일/포맷 변경을 피한다.
-- 기능 변경 시 간단한 검증 방법(재현/확인 단계)을 함께 제시한다.
+- Solve with minimal changes.
+- Avoid unrelated file or format modifications.
+- When changing functionality, provide a simple verification method (reproduction/confirmation steps).
 
-## 11) API 엔드포인트 (최신)
+## 11) API Endpoints (Latest)
 
 ### Portfolio Router (`/api/portfolio`)
-- `GET /api/portfolio` — 포트폴리오 목록 조회
-- `GET /api/portfolio/summary` — 국내/해외 요약 (2024-4-18 추가: 현재가 기반 수익률)
-- `POST /api/portfolio` — 종목 추가
-- `PUT /api/portfolio/{ticker}` — 종목 수정
-- `DELETE /api/portfolio/{ticker}` — 종목 삭제
-- `GET /api/portfolio/health` — 라우터 헬스체크
+- `GET /api/portfolio` — List portfolio holdings
+- `GET /api/portfolio/summary` — Domestic/overseas summary (added 2024-04-18: current price-based return)
+- `POST /api/portfolio` — Add holding
+- `PUT /api/portfolio/{ticker}` — Update holding
+- `DELETE /api/portfolio/{ticker}` — Delete holding
+- `GET /api/portfolio/health` — Router health check
 
 ### Watchlist Router (`/api/watchlist`)
-- `GET /api/watchlist` — 관심종목 목록 조회
-- `GET /api/watchlist/enrich` — yfinance 기반 자동채움 (query: `ticker` 또는 `company_name`, 선택 `lang=ko|en|ja|zh|fr`)
-- `POST /api/watchlist` — 관심종목 추가
-- `PUT /api/watchlist/{ticker}` — 관심종목 수정
-- `DELETE /api/watchlist/{ticker}` — 관심종목 삭제
-- `GET /api/watchlist/health` — 라우터 헬스체크
+- `GET /api/watchlist` — List watchlist items
+- `GET /api/watchlist/enrich` — yfinance-based autofill (query: `ticker` or `company_name`, optional `lang=ko|en|ja|zh|fr`)
+- `POST /api/watchlist` — Add watchlist item
+- `PUT /api/watchlist/{ticker}` — Update watchlist item
+- `DELETE /api/watchlist/{ticker}` — Delete watchlist item
+- `GET /api/watchlist/health` — Router health check
 
 ### Reports Router (`/api/reports`)
-- `GET /api/reports/daily` — 일일 리포트 목록 (date 배열)
-- `GET /api/reports/daily/{date}` — 특정 일자 리포트 본문
-- `GET /api/reports/weekly` — 주간 리포트 목록 (week 배열)
-- `GET /api/reports/weekly/{week}` — 특정 주 리포트 본문
-- `GET /api/reports/health` — 라우터 헬스체크
+- `GET /api/reports/daily` — Daily report list (date array)
+- `GET /api/reports/daily/{date}` — Specific date report body
+- `GET /api/reports/weekly` — Weekly report list (week array)
+- `GET /api/reports/weekly/{week}` — Specific week report body
+- `GET /api/reports/health` — Router health check
 
 ### Main App
 - `GET /` — index.html (SPA)
-- `GET /health` — 앱 헬스체크
-- `GET /api/status` — 상태(브리핑 스크립트 존재 여부) + 최신 리포트 키
-- `POST /api/run-briefing` — 브리핑 생성 (generate_briefing.py 실행)
+- `GET /health` — App health check
+- `GET /api/status` — Status (briefing script existence) + latest report keys
+- `POST /api/run-briefing` — Generate briefing (runs generate_briefing.py)
 
-## 12) 데이터 경로 & 운영 정보
+## 12) Data Paths & Operations Info
 
-### 파일 경로
+### File Paths
 ```
 ~/investment-assistant/
 ├── data/
-│   ├── portfolio.csv          # 포트폴리오 (ticker, company_name, market, holding_status, quantity, avg_cost, currency, target_weight, thesis, risk_notes, priority)
-│   ├── watchlist.csv          # 관심종목 (ticker, company_name, market, watch_reason, ideal_entry, trigger_condition, invalidation, risk_notes, priority)
-│   └── investor_profile.md    # 투자자 프로필 (OpenClaw 용)
+│   ├── portfolio.csv          # Portfolio (ticker, company_name, market, holding_status, quantity, avg_cost, currency, target_weight, thesis, risk_notes, priority)
+│   ├── watchlist.csv          # Watchlist (ticker, company_name, market, watch_reason, ideal_entry, trigger_condition, invalidation, risk_notes, priority)
+│   └── investor_profile.md    # Investor profile (for OpenClaw)
 ├── reports/
-│   ├── daily/                 # 일일 브리핑 (YYYY-MM-DD.md, 매일 09:00 생성)
-│   └── weekly/                # 주간 리포트 (YYYY-Wxx.md, 매주 월요일 09:10 생성)
-└── generate_briefing.py       # OpenClaw 브리핑 생성 스크립트
+│   ├── daily/                 # Daily briefings (YYYY-MM-DD.md, generated daily at 09:00)
+│   └── weekly/                # Weekly reports (YYYY-Wxx.md, generated every Monday at 09:10)
+└── generate_briefing.py       # OpenClaw briefing generation script
 ```
 
-### 웹앱 서버
-- **포트**: 8001 (Azure VM) / 8000 (로컬 개발)
-- **실행**: `cd webapp && python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000`
-- **서비스**: systemd `investment-webapp` (VM)
+### Webapp Server
+- **Port**: 8001 (Azure VM) / 8000 (local development)
+- **Run**: `cd webapp && python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000`
+- **Service**: systemd `investment-webapp` (VM)
 
-### CSV 필드 정의
+### CSV Field Definitions
 **portfolio.csv**:
-- `ticker`: 상장 심볼 (예: 000660, AAPL)
-- `company_name`: 종목명
+- `ticker`: Stock symbol (e.g., 000660, AAPL)
+- `company_name`: Company name
 - `market`: KRX | NYSE | NASDAQ
 - `holding_status`: active | cash
-- `quantity`: 보유 수량 (정수)
-- `avg_cost`: 평균 단가 (실수)
+- `quantity`: Holding quantity (integer)
+- `avg_cost`: Average cost (float)
 - `currency`: KRW | USD
-- `target_weight`: 목표 비중 (실수, 0.0~1.0)
-- `thesis`: 투자 논리
-- `risk_notes`: 위험 요소
-- `priority`: 우선순위 (1~5)
+- `target_weight`: Target weight (float, 0.0–1.0)
+- `thesis`: Investment logic
+- `risk_notes`: Risk factors
+- `priority`: Priority (1–5)
 
 **watchlist.csv**:
-- `ticker`: 상장 심볼
-- `company_name`: 종목명
+- `ticker`: Stock symbol
+- `company_name`: Company name
 - `market`: KRX | NYSE | NASDAQ
-- `watch_reason`: 관심 이유
-- `ideal_entry`: 진입 목표가
-- `trigger_condition`: 진입 조건
-- `invalidation`: 무효 조건
-- `risk_notes`: 위험 요소
-- `priority`: 우선순위 (1~5)
+- `watch_reason`: Reason for watching
+- `ideal_entry`: Target entry price
+- `trigger_condition`: Entry trigger condition
+- `invalidation`: Invalidation condition
+- `risk_notes`: Risk factors
+- `priority`: Priority (1–5)
