@@ -59,7 +59,7 @@ This file defines the baseline rules that GitHub Copilot always follows in this 
 
 ## 8) Documentation Update Rules
 
-Update `README.md` (both `README.md` and `README.en.md`) when any of the following change:
+Update `README.md` (both `README.md` and `README.ko.md`) when any of the following change:
 
 - User feature flows
 - API endpoints
