@@ -50,6 +50,12 @@
 - 주요 상태 변수(`portfolioAutofillLoading`, `watchlistAutofillLoading`)를 기준으로 버튼/모달 제어를 유지한다.
 - API 호출은 공통 fetch 래퍼와 일관된 에러 처리 패턴을 사용한다.
 - 대시보드 리포트 렌더링 시 용어 치환 규칙을 유지한다.
+- **다국어(i18n) 규칙**:
+  - UI 문자열은 `t(key)` 함수를 통해 번역 사전에서 조회한다. 하드코딩 금지.
+  - 새 UI 문자열 추가 시 5개 언어(ko/en/ja/zh/fr) 모두 `TRANSLATIONS` 사전에 키를 추가한다.
+  - 언어 선택은 `state.language`로 관리하며 `setLanguage()`를 통해서만 변경한다.
+  - 정적 DOM 요소는 `data-i18n` 속성, 동적 텍스트는 `t()` 함수로 처리한다.
+  - 자동채움 enrich 호출 시 `lang=state.language`를 쿼리에 포함해 서버 생성 문구도 현재 언어로 받는다.
 
 ## 8) 문서 업데이트 규칙
 
@@ -92,7 +98,7 @@ python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 
 ### Watchlist Router (`/api/watchlist`)
 - `GET /api/watchlist` — 관심종목 목록 조회
-- `GET /api/watchlist/enrich` — yfinance 기반 자동채움 (query: ticker 또는 company_name)
+- `GET /api/watchlist/enrich` — yfinance 기반 자동채움 (query: `ticker` 또는 `company_name`, 선택 `lang=ko|en|ja|zh|fr`)
 - `POST /api/watchlist` — 관심종목 추가
 - `PUT /api/watchlist/{ticker}` — 관심종목 수정
 - `DELETE /api/watchlist/{ticker}` — 관심종목 삭제

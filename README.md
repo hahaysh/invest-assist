@@ -451,6 +451,8 @@ nano ~/investment-assistant/data/watchlist.csv
 - 에러 메시지는 object 형태가 보이지 않게 사람이 읽을 수 있게 파싱
 - 대시보드 리포트 표시는 Thesis 대신 투자논리, watchlist 대신 관심종목으로 보여줘
 - 문구 표준은 포트 폴리오 현황 사용
+- UI 문자열은 t(key) 함수로만 출력하고, 새 문구 추가 시 TRANSLATIONS 사전 5개 언어에 모두 키를 추가해줘
+- 관심종목 enrich 호출 시 lang=state.language 파라미터를 반드시 포함시켜줘
 작업 방식:
 - 코드 수정 후 바로 검색/검증까지 완료
 - 변경 이유와 사용자 영향도를 짧게 요약
