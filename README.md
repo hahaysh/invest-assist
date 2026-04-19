@@ -1,5 +1,9 @@
 # 🦞 OpenClaw Personal Investment Assistant — Setup Guide
 
+> [!NOTE]
+> 🤖 **This entire project — code, architecture, and documentation — was built with [GitHub Copilot](https://github.com/features/copilot).**
+> Every feature, bug fix, and README update was implemented through AI-assisted development using GitHub Copilot in VS Code.
+
 > 🇰🇷 [한국어 버전 → README.ko.md](./README.ko.md)
 
 Azure Linux VM setup for automatically generating daily investment briefings via OpenClaw and delivering them through Telegram.

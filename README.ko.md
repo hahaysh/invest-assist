@@ -1,5 +1,9 @@
 # 🦞 OpenClaw 개인 투자 비서 세팅 가이드
 
+> [!NOTE]
+> 🤖 **이 프로젝트의 모든 작업 — 코드, 아키텍처, 문서 — 은 [GitHub Copilot](https://github.com/features/copilot)으로 이루어졌습니다.**
+> 모든 기능 구현, 버그 수정, README 업데이트가 VS Code의 GitHub Copilot AI 기반 개발로 완성되었습니다.
+
 > 🇺🇸 [English version available → README.md](./README.md)
 
 Azure Linux VM에서 OpenClaw를 활용해 매일 자동으로 투자 브리핑을 생성하고 Telegram으로 받는 시스템입니다.
