@@ -105,6 +105,7 @@
         inset: 0;
         z-index: 40;
         background-color: rgba(0, 0, 0, 0.5);
+        -webkit-backdrop-filter: blur(2px);
         backdrop-filter: blur(2px);
       }
 
@@ -131,14 +132,26 @@
       <header class="rounded-2xl border border-slate-700 bg-slate-900/80 p-4 backdrop-blur md:p-5">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 class="text-2xl font-bold tracking-tight md:text-3xl">투자 비서 대시보드</h1>
-            <p class="mt-1 text-sm text-slate-400">FastAPI + Vanilla JS + Tailwind CDN</p>
+            <h1 class="text-2xl font-bold tracking-tight md:text-3xl" data-i18n="appHeading">투자 비서 대시보드</h1>
+            <p class="mt-1 text-sm text-slate-400" data-i18n="appSubtitle">FastAPI + Vanilla JS + Tailwind CDN</p>
           </div>
-          <nav class="grid grid-cols-3 gap-2 rounded-xl bg-slate-800/70 p-1">
-            <button data-tab="dashboard" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold">대시보드</button>
-            <button data-tab="portfolio" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold">포트폴리오</button>
-            <button data-tab="watchlist" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold">관심종목</button>
-          </nav>
+          <div class="flex flex-col gap-3 md:items-end">
+            <div class="flex items-center justify-end gap-2">
+              <label for="languageSelect" class="sr-only" data-i18n="languageSelectorLabel">언어 선택</label>
+              <select id="languageSelect" class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100">
+                <option value="ko">한국어</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="zh">中文</option>
+                <option value="fr">Français</option>
+              </select>
+            </div>
+            <nav class="grid grid-cols-3 gap-2 rounded-xl bg-slate-800/70 p-1">
+              <button data-tab="dashboard" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold" data-i18n="navDashboard">대시보드</button>
+              <button data-tab="portfolio" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold" data-i18n="navPortfolio">포트폴리오</button>
+              <button data-tab="watchlist" class="nav-tab rounded-lg px-3 py-2 text-sm font-semibold" data-i18n="navWatchlist">관심종목</button>
+            </nav>
+          </div>
         </div>
       </header>
 
@@ -146,11 +159,11 @@
         <section id="tab-dashboard" class="tab-panel space-y-5">
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <article class="rounded-2xl border border-slate-700 p-4" style="background-color: var(--card)">
-              <p class="text-sm text-slate-400">최신 일일 브리핑 날짜</p>
+              <p class="text-sm text-slate-400" data-i18n="latestDailyLabel">최신 일일 브리핑 날짜</p>
               <p id="latestDaily" class="mt-2 text-2xl font-bold" style="color: var(--accent)">-</p>
             </article>
             <article class="rounded-2xl border border-slate-700 p-4" style="background-color: var(--card)">
-              <p class="text-sm text-slate-400">최신 주간 리포트 주차</p>
+              <p class="text-sm text-slate-400" data-i18n="latestWeeklyLabel">최신 주간 리포트 주차</p>
               <p id="latestWeekly" class="mt-2 text-2xl font-bold" style="color: var(--accent)">-</p>
             </article>
           </div>
@@ -161,7 +174,7 @@
               class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-semibold text-slate-950 transition hover:brightness-105"
               style="background-color: var(--accent)"
             >
-              <span>일일 브리핑 실행</span>
+              <span data-i18n="runDaily">일일 브리핑 실행</span>
               <span id="runDailySpinner" class="spin hidden"></span>
             </button>
             <button
@@ -169,18 +182,18 @@
               class="inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 font-semibold transition hover:bg-amber-500/10"
               style="border-color: var(--accent); color: var(--accent)"
             >
-              <span>주간 리포트 실행</span>
+              <span data-i18n="runWeekly">주간 리포트 실행</span>
               <span id="runWeeklySpinner" class="spin hidden"></span>
             </button>
           </div>
 
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <article class="rounded-2xl border border-slate-700 p-4" style="background-color: var(--card)">
-              <h2 class="mb-3 text-lg font-semibold">일일 브리핑 목록</h2>
+              <h2 class="mb-3 text-lg font-semibold" data-i18n="dailyListTitle">일일 브리핑 목록</h2>
               <ul id="dailyList" class="space-y-2"></ul>
             </article>
             <article class="rounded-2xl border border-slate-700 p-4" style="background-color: var(--card)">
-              <h2 class="mb-3 text-lg font-semibold">주간 리포트 목록</h2>
+              <h2 class="mb-3 text-lg font-semibold" data-i18n="weeklyListTitle">주간 리포트 목록</h2>
               <ul id="weeklyList" class="space-y-2"></ul>
             </article>
           </div>
@@ -188,11 +201,11 @@
           <article class="rounded-2xl border border-slate-700 p-4 md:p-6" style="background-color: var(--card)">
             <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div class="flex gap-2">
-                <button data-viewer-tab="daily" class="viewer-tab rounded-lg px-3 py-2 text-sm font-semibold">일일</button>
-                <button data-viewer-tab="weekly" class="viewer-tab rounded-lg px-3 py-2 text-sm font-semibold">주간</button>
+                <button data-viewer-tab="daily" class="viewer-tab rounded-lg px-3 py-2 text-sm font-semibold" data-i18n="viewerTabDaily">일일</button>
+                <button data-viewer-tab="weekly" class="viewer-tab rounded-lg px-3 py-2 text-sm font-semibold" data-i18n="viewerTabWeekly">주간</button>
               </div>
               <div class="w-full md:w-72">
-                <label for="reportSelect" class="mb-1 block text-xs text-slate-400">리포트 선택</label>
+                <label for="reportSelect" class="mb-1 block text-xs text-slate-400" data-i18n="reportSelectLabel">리포트 선택</label>
                 <select id="reportSelect" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100"></select>
               </div>
             </div>
@@ -205,25 +218,25 @@
         <section id="tab-portfolio" class="tab-panel hidden">
           <article class="rounded-2xl border border-slate-700 p-4 md:p-6" style="background-color: var(--card)">
             <div class="mb-4 flex items-center justify-between">
-              <h2 class="text-xl font-semibold">포트폴리오</h2>
-              <button id="addPortfolioBtn" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">+ 종목 추가</button>
+              <h2 class="text-xl font-semibold" data-i18n="portfolioTitle">포트폴리오</h2>
+              <button id="addPortfolioBtn" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)" data-i18n="addItemButton">+ 종목 추가</button>
             </div>
             <div id="portfolioSummary" class="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
-              <div class="rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm text-slate-300">요약 로딩 중...</div>
+              <div class="rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm text-slate-300" data-i18n="summaryLoading">요약 로딩 중...</div>
             </div>
             <div class="overflow-x-auto">
               <table class="min-w-full text-sm border-collapse">
                 <thead class="bg-slate-900 text-slate-200">
                   <tr>
-                    <th class="px-3 py-2 text-left">Ticker</th>
-                    <th class="px-3 py-2 text-left">종목명</th>
-                    <th class="px-3 py-2 text-left">시장</th>
-                    <th class="px-3 py-2 text-left">수량</th>
-                    <th class="px-3 py-2 text-left">평단</th>
-                    <th class="px-3 py-2 text-left">통화</th>
-                    <th class="px-3 py-2 text-left">비중</th>
-                    <th class="px-3 py-2 text-left">상태</th>
-                    <th class="px-3 py-2 text-center">작업</th>
+                    <th class="px-3 py-2 text-left" data-i18n="tableTicker">Ticker</th>
+                    <th class="px-3 py-2 text-left" data-i18n="tableCompanyName">종목명</th>
+                    <th class="px-3 py-2 text-left" data-i18n="tableMarket">시장</th>
+                    <th class="px-3 py-2 text-left" data-i18n="tableQuantity">수량</th>
+                    <th class="px-3 py-2 text-left" data-i18n="tableAvgCost">평단</th>
+                    <th class="px-3 py-2 text-left" data-i18n="tableCurrency">통화</th>
+                    <th class="px-3 py-2 text-left" data-i18n="tableWeight">비중</th>
+                    <th class="px-3 py-2 text-left" data-i18n="tableStatus">상태</th>
+                    <th class="px-3 py-2 text-center" data-i18n="tableActions">작업</th>
                   </tr>
                 </thead>
                 <tbody id="portfolioRows" class="divide-y divide-slate-700"></tbody>
@@ -236,8 +249,8 @@
         <section id="tab-watchlist" class="tab-panel hidden">
           <article class="rounded-2xl border border-slate-700 p-4 md:p-6" style="background-color: var(--card)">
             <div class="mb-4 flex items-center justify-between">
-              <h2 class="text-xl font-semibold">관심종목</h2>
-              <button id="addWatchlistBtn" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">+ 종목 추가</button>
+              <h2 class="text-xl font-semibold" data-i18n="watchlistTitle">관심종목</h2>
+              <button id="addWatchlistBtn" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)" data-i18n="addItemButton">+ 종목 추가</button>
             </div>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div id="watchlistGrid" class="contents"></div>
@@ -256,26 +269,26 @@
         <h2 id="portfolioModalTitle" class="mb-4 text-xl font-semibold">종목 추가</h2>
         <form id="portfolioForm" class="space-y-3">
           <div>
-            <label class="block text-xs text-slate-400">관심종목에서 선택 (선택사항)</label>
+            <label class="block text-xs text-slate-400" data-i18n="portfolioSelectWatchlistLabel">관심종목에서 선택 (선택사항)</label>
             <select id="portfolioWatchlistSelect" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100">
-              <option value="">— 관심종목에서 선택하면 자동 채워집니다 —</option>
+              <option value="" data-i18n="portfolioSelectWatchlistPlaceholder">— 관심종목에서 선택하면 자동 채워집니다 —</option>
             </select>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs text-slate-400">Ticker *</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelTickerRequired">Ticker *</label>
               <input id="portfolioTicker" type="text" required placeholder="AAPL" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
             <div>
-              <label class="block text-xs text-slate-400">종목명 *</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelCompanyRequired">종목명 *</label>
               <input id="portfolioCompanyName" type="text" required placeholder="Apple" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs text-slate-400">시장</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelMarket">시장</label>
               <select id="portfolioMarket" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100">
                 <option value="KRX">KRX</option>
                 <option value="NYSE">NYSE</option>
@@ -283,59 +296,59 @@
               </select>
             </div>
             <div>
-              <label class="block text-xs text-slate-400">상태</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelHoldingStatus">상태</label>
               <select id="portfolioHoldingStatus" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100">
-                <option value="active">active</option>
-                <option value="cash">cash</option>
+                <option value="active" data-i18n="holdingStatusActive">active</option>
+                <option value="cash" data-i18n="holdingStatusCash">cash</option>
               </select>
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs text-slate-400">수량</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelQuantity">수량</label>
               <input id="portfolioQuantity" type="number" placeholder="100" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
             <div>
-              <label class="block text-xs text-slate-400">평단가</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelAvgCost">평단가</label>
               <input id="portfolioAvgCost" type="number" step="0.01" placeholder="150.50" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs text-slate-400">통화</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelCurrency">통화</label>
               <select id="portfolioCurrency" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100">
                 <option value="KRW">KRW</option>
                 <option value="USD">USD</option>
               </select>
             </div>
             <div>
-              <label class="block text-xs text-slate-400">목표 비중</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelTargetWeight">목표 비중</label>
               <input id="portfolioTargetWeight" type="number" step="0.01" placeholder="0.15" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs text-slate-400">우선순위 (1-5)</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelPriority">우선순위 (1-5)</label>
               <input id="portfolioPriority" type="number" min="1" max="5" placeholder="1" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
           </div>
 
           <div>
-            <label class="block text-xs text-slate-400">투자논리</label>
-            <textarea id="portfolioThesis" placeholder="투자 논리를 입력하세요" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
+            <label class="block text-xs text-slate-400" data-i18n="labelThesis">투자논리</label>
+            <textarea id="portfolioThesis" placeholder="투자 논리를 입력하세요" data-i18n-placeholder="placeholderThesis" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
           </div>
 
           <div>
-            <label class="block text-xs text-slate-400">위험 노트</label>
-            <textarea id="portfolioRiskNotes" placeholder="위험 요소를 입력하세요" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
+            <label class="block text-xs text-slate-400" data-i18n="labelRiskNotes">위험 노트</label>
+            <textarea id="portfolioRiskNotes" placeholder="위험 요소를 입력하세요" data-i18n-placeholder="placeholderRiskNotes" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
           </div>
 
           <div class="flex gap-3 pt-4">
-            <button id="savePortfolioBtn" type="submit" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">저장</button>
-            <button type="button" id="closePortfolioModal" class="flex-1 rounded-lg border border-slate-500 px-3 py-2 text-sm font-semibold hover:bg-slate-800">취소</button>
+            <button id="savePortfolioBtn" type="submit" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)" data-i18n="buttonSave">저장</button>
+            <button type="button" id="closePortfolioModal" class="flex-1 rounded-lg border border-slate-500 px-3 py-2 text-sm font-semibold hover:bg-slate-800" data-i18n="buttonCancel">취소</button>
           </div>
         </form>
       </div>
@@ -348,64 +361,617 @@
         <form id="watchlistForm" class="space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs text-slate-400">Ticker *</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelTickerRequired">Ticker *</label>
               <input id="watchlistTicker" type="text" required placeholder="MSFT" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
             <div>
-              <label class="block text-xs text-slate-400">종목명 *</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelCompanyRequired">종목명 *</label>
               <input id="watchlistCompanyName" type="text" required placeholder="Microsoft" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs text-slate-400">시장</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelMarket">시장</label>
               <input id="watchlistMarket" type="text" placeholder="NASDAQ" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
             <div>
               <label class="block text-xs text-slate-400">
-                진입가 <span id="watchlistCurrencyBadge" class="ml-1 text-slate-500"></span>
+                <span data-i18n="labelIdealEntry">진입가</span> <span id="watchlistCurrencyBadge" class="ml-1 text-slate-500"></span>
               </label>
               <input id="watchlistIdealEntry" type="number" step="0.01" placeholder="380.0" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
           </div>
 
           <div>
-            <label class="block text-xs text-slate-400">관심 이유</label>
-            <textarea id="watchlistWatchReason" placeholder="관심 이유를 입력하세요" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
+            <label class="block text-xs text-slate-400" data-i18n="labelWatchReason">관심 이유</label>
+            <textarea id="watchlistWatchReason" placeholder="관심 이유를 입력하세요" data-i18n-placeholder="placeholderWatchReason" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
           </div>
 
           <div>
-            <label class="block text-xs text-slate-400">진입 조건</label>
-            <textarea id="watchlistTriggerCondition" placeholder="진입 조건을 입력하세요" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
+            <label class="block text-xs text-slate-400" data-i18n="labelTriggerCondition">진입 조건</label>
+            <textarea id="watchlistTriggerCondition" placeholder="진입 조건을 입력하세요" data-i18n-placeholder="placeholderTriggerCondition" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
           </div>
 
           <div>
-            <label class="block text-xs text-slate-400">부정 조건</label>
-            <textarea id="watchlistInvalidation" placeholder="부정 조건을 입력하세요" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
+            <label class="block text-xs text-slate-400" data-i18n="labelInvalidation">부정 조건</label>
+            <textarea id="watchlistInvalidation" placeholder="부정 조건을 입력하세요" data-i18n-placeholder="placeholderInvalidation" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" rows="2"></textarea>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs text-slate-400">위험 노트</label>
-              <input id="watchlistRiskNotes" type="text" placeholder="위험 요소" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
+              <label class="block text-xs text-slate-400" data-i18n="labelRiskNotes">위험 노트</label>
+              <input id="watchlistRiskNotes" type="text" placeholder="위험 요소" data-i18n-placeholder="placeholderRiskItem" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
             <div>
-              <label class="block text-xs text-slate-400">우선순위 (1-5)</label>
+              <label class="block text-xs text-slate-400" data-i18n="labelPriority">우선순위 (1-5)</label>
               <input id="watchlistPriority" type="number" min="1" max="5" placeholder="1" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100" />
             </div>
           </div>
 
           <div class="flex gap-3 pt-4">
-            <button id="saveWatchlistBtn" type="submit" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)">저장</button>
-            <button type="button" id="closeWatchlistModal" class="flex-1 rounded-lg border border-slate-500 px-3 py-2 text-sm font-semibold hover:bg-slate-800">취소</button>
+            <button id="saveWatchlistBtn" type="submit" class="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105" style="background-color: var(--accent)" data-i18n="buttonSave">저장</button>
+            <button type="button" id="closeWatchlistModal" class="flex-1 rounded-lg border border-slate-500 px-3 py-2 text-sm font-semibold hover:bg-slate-800" data-i18n="buttonCancel">취소</button>
           </div>
         </form>
       </div>
     </div>
 
     <script>
+      const SUPPORTED_LANGUAGES = ["ko", "en", "ja", "zh", "fr"];
+      const LOCALE_MAP = {
+        ko: "ko-KR",
+        en: "en-US",
+        ja: "ja-JP",
+        zh: "zh-CN",
+        fr: "fr-FR",
+      };
+
+      const TRANSLATIONS = {
+        ko: {
+          appTitle: "투자 비서 웹앱",
+          appHeading: "투자 비서 대시보드",
+          appSubtitle: "FastAPI + Vanilla JS + Tailwind CDN",
+          languageSelectorLabel: "언어 선택",
+          navDashboard: "대시보드",
+          navPortfolio: "포트폴리오",
+          navWatchlist: "관심종목",
+          latestDailyLabel: "최신 일일 브리핑 날짜",
+          latestWeeklyLabel: "최신 주간 리포트 주차",
+          runDaily: "일일 브리핑 실행",
+          runWeekly: "주간 리포트 실행",
+          dailyListTitle: "일일 브리핑 목록",
+          weeklyListTitle: "주간 리포트 목록",
+          viewerTabDaily: "일일",
+          viewerTabWeekly: "주간",
+          reportSelectLabel: "리포트 선택",
+          portfolioTitle: "포트폴리오",
+          watchlistTitle: "관심종목",
+          addItemButton: "+ 종목 추가",
+          summaryLoading: "요약 로딩 중...",
+          tableTicker: "Ticker",
+          tableCompanyName: "종목명",
+          tableMarket: "시장",
+          tableQuantity: "수량",
+          tableAvgCost: "평단",
+          tableCurrency: "통화",
+          tableWeight: "비중",
+          tableStatus: "상태",
+          tableActions: "작업",
+          portfolioSelectWatchlistLabel: "관심종목에서 선택 (선택사항)",
+          portfolioSelectWatchlistPlaceholder: "— 관심종목에서 선택하면 자동 채워집니다 —",
+          labelTickerRequired: "Ticker *",
+          labelCompanyRequired: "종목명 *",
+          labelMarket: "시장",
+          labelHoldingStatus: "상태",
+          holdingStatusActive: "보유",
+          holdingStatusCash: "현금",
+          labelQuantity: "수량",
+          labelAvgCost: "평단가",
+          labelCurrency: "통화",
+          labelTargetWeight: "목표 비중",
+          labelPriority: "우선순위 (1-5)",
+          labelThesis: "투자논리",
+          labelRiskNotes: "위험 노트",
+          labelIdealEntry: "진입가",
+          labelWatchReason: "관심 이유",
+          labelTriggerCondition: "진입 조건",
+          labelInvalidation: "부정 조건",
+          placeholderThesis: "투자 논리를 입력하세요",
+          placeholderRiskNotes: "위험 요소를 입력하세요",
+          placeholderWatchReason: "관심 이유를 입력하세요",
+          placeholderTriggerCondition: "진입 조건을 입력하세요",
+          placeholderInvalidation: "부정 조건을 입력하세요",
+          placeholderRiskItem: "위험 요소",
+          buttonSave: "저장",
+          buttonCancel: "취소",
+          genericRequestError: "요청 처리 중 오류가 발생했습니다.",
+          labelHoldingsCount: "보유 종목 수",
+          labelCostTotal: "원가 합계",
+          labelMarketValue: "평가 금액",
+          labelProfit: "평가 손익",
+          labelReturnRate: "수익률",
+          summaryLoadFailed: "요약 정보를 불러올 수 없습니다. ({error})",
+          totalSummaryKrw: "전체 요약 (원화 기준)",
+          domestic: "국내",
+          overseas: "해외",
+          exchangeRate: "환율",
+          noReports: "리포트가 없습니다.",
+          noSelectableReports: "선택 가능한 리포트가 없습니다",
+          viewerMetaDaily: "일일 브리핑: {value}",
+          viewerMetaWeekly: "주간 리포트: {value}",
+          autofillDone: "기본 정보를 자동으로 채웠습니다.",
+          autofillFailed: "자동 채움 실패: {error}",
+          watchlistIdealEntryEmpty: "진입가가 비어 있습니다. 자동채움 후 저장하거나 직접 입력해 주세요.",
+          watchlistIdealEntryInvalid: "진입가 형식이 올바르지 않습니다.",
+          priorityInvalid: "우선순위 형식이 올바르지 않습니다.",
+          portfolioValidationError: "수량/우선순위는 정수, 평단가/목표 비중은 숫자로 입력해 주세요.",
+          portfolioUpdated: "포트폴리오 수정 완료",
+          portfolioAdded: "포트폴리오 추가 완료",
+          portfolioDeleted: "포트폴리오 삭제 완료",
+          watchlistUpdated: "관심종목 수정 완료",
+          watchlistAdded: "관심종목 추가 완료",
+          watchlistDeleted: "관심종목 삭제 완료",
+          deleteConfirm: "{ticker}을(를) 삭제하시겠습니까?",
+          loading: "로딩 중...",
+          noData: "데이터가 없습니다.",
+          edit: "수정",
+          delete: "삭제",
+          currencyBadgeKRW: "(원화 KRW)",
+          currencyBadgeUSD: "(달러 USD)",
+          coreHypothesis: "핵심 가설",
+          newsSummary: "뉴스 요약",
+          entryObservation: "진입 관찰 포인트",
+          invalidationCondition: "무효화 조건",
+          defaultThesis: "{name}의 실적/모멘텀 개선을 확인하며 분할 진입을 검토한다.",
+          portfolioAutofillDone: "{ticker} 정보가 자동으로 채워졌습니다 (관심종목 기반).",
+          modalAddTitle: "종목 추가",
+          modalEditTitle: "종목 수정",
+          modalAutofillingSuffix: "(자동 채움 중...)",
+          watchReasonCard: "관심이유",
+          idealEntryCard: "진입 목표가",
+          triggerConditionCard: "진입 조건",
+          invalidationCard: "무효 조건",
+          riskItemCard: "위험 요소",
+          runDailyDone: "브리핑 생성을 시작했습니다.",
+          runWeeklyDone: "주간 리포트 생성을 시작했습니다.",
+        },
+        en: {
+          appTitle: "Investment Assistant Web App",
+          appHeading: "Investment Assistant Dashboard",
+          appSubtitle: "FastAPI + Vanilla JS + Tailwind CDN",
+          languageSelectorLabel: "Select language",
+          navDashboard: "Dashboard",
+          navPortfolio: "Portfolio",
+          navWatchlist: "Watchlist",
+          latestDailyLabel: "Latest daily briefing date",
+          latestWeeklyLabel: "Latest weekly report week",
+          runDaily: "Run daily briefing",
+          runWeekly: "Run weekly report",
+          dailyListTitle: "Daily briefings",
+          weeklyListTitle: "Weekly reports",
+          viewerTabDaily: "Daily",
+          viewerTabWeekly: "Weekly",
+          reportSelectLabel: "Select report",
+          portfolioTitle: "Portfolio",
+          watchlistTitle: "Watchlist",
+          addItemButton: "+ Add item",
+          summaryLoading: "Loading summary...",
+          tableTicker: "Ticker",
+          tableCompanyName: "Company",
+          tableMarket: "Market",
+          tableQuantity: "Quantity",
+          tableAvgCost: "Avg. cost",
+          tableCurrency: "Currency",
+          tableWeight: "Weight",
+          tableStatus: "Status",
+          tableActions: "Actions",
+          portfolioSelectWatchlistLabel: "Select from watchlist (optional)",
+          portfolioSelectWatchlistPlaceholder: "— Select from the watchlist to autofill —",
+          labelTickerRequired: "Ticker *",
+          labelCompanyRequired: "Company name *",
+          labelMarket: "Market",
+          labelHoldingStatus: "Status",
+          holdingStatusActive: "Active",
+          holdingStatusCash: "Cash",
+          labelQuantity: "Quantity",
+          labelAvgCost: "Average cost",
+          labelCurrency: "Currency",
+          labelTargetWeight: "Target weight",
+          labelPriority: "Priority (1-5)",
+          labelThesis: "Investment thesis",
+          labelRiskNotes: "Risk notes",
+          labelIdealEntry: "Target entry",
+          labelWatchReason: "Reason to watch",
+          labelTriggerCondition: "Trigger condition",
+          labelInvalidation: "Invalidation",
+          placeholderThesis: "Enter the investment thesis",
+          placeholderRiskNotes: "Enter risk notes",
+          placeholderWatchReason: "Enter the watch reason",
+          placeholderTriggerCondition: "Enter the trigger condition",
+          placeholderInvalidation: "Enter the invalidation condition",
+          placeholderRiskItem: "Risk factors",
+          buttonSave: "Save",
+          buttonCancel: "Cancel",
+          genericRequestError: "An error occurred while processing the request.",
+          labelHoldingsCount: "Holdings",
+          labelCostTotal: "Total cost",
+          labelMarketValue: "Market value",
+          labelProfit: "Profit / loss",
+          labelReturnRate: "Return",
+          summaryLoadFailed: "Unable to load the summary. ({error})",
+          totalSummaryKrw: "Overall summary (KRW basis)",
+          domestic: "Domestic",
+          overseas: "Overseas",
+          exchangeRate: "Exchange rate",
+          noReports: "No reports available.",
+          noSelectableReports: "No reports available to select",
+          viewerMetaDaily: "Daily briefing: {value}",
+          viewerMetaWeekly: "Weekly report: {value}",
+          autofillDone: "Basic information was autofilled.",
+          autofillFailed: "Autofill failed: {error}",
+          watchlistIdealEntryEmpty: "Target entry is empty. Autofill it first or enter it manually.",
+          watchlistIdealEntryInvalid: "The target entry format is invalid.",
+          priorityInvalid: "The priority format is invalid.",
+          portfolioValidationError: "Quantity/Priority must be integers, and avg. cost/target weight must be numeric.",
+          portfolioUpdated: "Portfolio updated",
+          portfolioAdded: "Portfolio added",
+          portfolioDeleted: "Portfolio deleted",
+          watchlistUpdated: "Watchlist updated",
+          watchlistAdded: "Watchlist added",
+          watchlistDeleted: "Watchlist deleted",
+          deleteConfirm: "Delete {ticker}?",
+          loading: "Loading...",
+          noData: "No data available.",
+          edit: "Edit",
+          delete: "Delete",
+          currencyBadgeKRW: "(KRW)",
+          currencyBadgeUSD: "(USD)",
+          coreHypothesis: "Core thesis",
+          newsSummary: "News summary",
+          entryObservation: "Entry observation",
+          invalidationCondition: "Invalidation",
+          defaultThesis: "Review staggered entry as {name} shows improving earnings and momentum.",
+          portfolioAutofillDone: "Autofilled {ticker} using the watchlist.",
+          modalAddTitle: "Add item",
+          modalEditTitle: "Edit item",
+          modalAutofillingSuffix: "(Autofilling...)",
+          watchReasonCard: "Reason to watch",
+          idealEntryCard: "Target entry",
+          triggerConditionCard: "Trigger condition",
+          invalidationCard: "Invalidation",
+          riskItemCard: "Risk factors",
+          runDailyDone: "Started generating the briefing.",
+          runWeeklyDone: "Started generating the weekly report.",
+        },
+        ja: {
+          appTitle: "投資アシスタント Web アプリ",
+          appHeading: "投資アシスタント ダッシュボード",
+          appSubtitle: "FastAPI + Vanilla JS + Tailwind CDN",
+          languageSelectorLabel: "言語を選択",
+          navDashboard: "ダッシュボード",
+          navPortfolio: "ポートフォリオ",
+          navWatchlist: "ウォッチリスト",
+          latestDailyLabel: "最新の日次ブリーフィング日付",
+          latestWeeklyLabel: "最新の週次レポート週",
+          runDaily: "日次ブリーフィング実行",
+          runWeekly: "週次レポート実行",
+          dailyListTitle: "日次ブリーフィング一覧",
+          weeklyListTitle: "週次レポート一覧",
+          viewerTabDaily: "日次",
+          viewerTabWeekly: "週次",
+          reportSelectLabel: "レポート選択",
+          portfolioTitle: "ポートフォリオ",
+          watchlistTitle: "ウォッチリスト",
+          addItemButton: "+ 項目追加",
+          summaryLoading: "サマリーを読み込み中...",
+          tableTicker: "Ticker",
+          tableCompanyName: "銘柄名",
+          tableMarket: "市場",
+          tableQuantity: "数量",
+          tableAvgCost: "平均取得単価",
+          tableCurrency: "通貨",
+          tableWeight: "比率",
+          tableStatus: "状態",
+          tableActions: "操作",
+          portfolioSelectWatchlistLabel: "ウォッチリストから選択（任意）",
+          portfolioSelectWatchlistPlaceholder: "— ウォッチリストから選ぶと自動入力されます —",
+          labelTickerRequired: "Ticker *",
+          labelCompanyRequired: "銘柄名 *",
+          labelMarket: "市場",
+          labelHoldingStatus: "状態",
+          holdingStatusActive: "保有中",
+          holdingStatusCash: "現金",
+          labelQuantity: "数量",
+          labelAvgCost: "平均取得単価",
+          labelCurrency: "通貨",
+          labelTargetWeight: "目標比率",
+          labelPriority: "優先度 (1-5)",
+          labelThesis: "投資仮説",
+          labelRiskNotes: "リスクメモ",
+          labelIdealEntry: "目標エントリー",
+          labelWatchReason: "監視理由",
+          labelTriggerCondition: "エントリー条件",
+          labelInvalidation: "無効化条件",
+          placeholderThesis: "投資仮説を入力してください",
+          placeholderRiskNotes: "リスク要因を入力してください",
+          placeholderWatchReason: "監視理由を入力してください",
+          placeholderTriggerCondition: "エントリー条件を入力してください",
+          placeholderInvalidation: "無効化条件を入力してください",
+          placeholderRiskItem: "リスク要因",
+          buttonSave: "保存",
+          buttonCancel: "キャンセル",
+          genericRequestError: "リクエスト処理中にエラーが発生しました。",
+          labelHoldingsCount: "保有銘柄数",
+          labelCostTotal: "取得原価合計",
+          labelMarketValue: "評価額",
+          labelProfit: "評価損益",
+          labelReturnRate: "収益率",
+          summaryLoadFailed: "サマリーを読み込めませんでした。({error})",
+          totalSummaryKrw: "全体サマリー（KRW基準）",
+          domestic: "国内",
+          overseas: "海外",
+          exchangeRate: "為替レート",
+          noReports: "レポートがありません。",
+          noSelectableReports: "選択できるレポートがありません",
+          viewerMetaDaily: "日次ブリーフィング: {value}",
+          viewerMetaWeekly: "週次レポート: {value}",
+          autofillDone: "基本情報を自動入力しました。",
+          autofillFailed: "自動入力に失敗しました: {error}",
+          watchlistIdealEntryEmpty: "目標エントリーが空です。自動入力するか手動で入力してください。",
+          watchlistIdealEntryInvalid: "目標エントリーの形式が正しくありません。",
+          priorityInvalid: "優先度の形式が正しくありません。",
+          portfolioValidationError: "数量/優先度は整数、平均取得単価/目標比率は数値で入力してください。",
+          portfolioUpdated: "ポートフォリオを更新しました",
+          portfolioAdded: "ポートフォリオに追加しました",
+          portfolioDeleted: "ポートフォリオから削除しました",
+          watchlistUpdated: "ウォッチリストを更新しました",
+          watchlistAdded: "ウォッチリストに追加しました",
+          watchlistDeleted: "ウォッチリストから削除しました",
+          deleteConfirm: "{ticker} を削除しますか？",
+          loading: "読み込み中...",
+          noData: "データがありません。",
+          edit: "編集",
+          delete: "削除",
+          currencyBadgeKRW: "(KRW)",
+          currencyBadgeUSD: "(USD)",
+          coreHypothesis: "主要仮説",
+          newsSummary: "ニュース要約",
+          entryObservation: "エントリー観察ポイント",
+          invalidationCondition: "無効化条件",
+          defaultThesis: "{name} の業績とモメンタム改善を確認しつつ、分割エントリーを検討します。",
+          portfolioAutofillDone: "ウォッチリストを元に {ticker} の情報を自動入力しました。",
+          modalAddTitle: "項目追加",
+          modalEditTitle: "項目編集",
+          modalAutofillingSuffix: "(自動入力中...)",
+          watchReasonCard: "監視理由",
+          idealEntryCard: "目標エントリー",
+          triggerConditionCard: "エントリー条件",
+          invalidationCard: "無効条件",
+          riskItemCard: "リスク要因",
+          runDailyDone: "ブリーフィング生成を開始しました。",
+          runWeeklyDone: "週次レポート生成を開始しました。",
+        },
+        zh: {
+          appTitle: "投资助手 Web 应用",
+          appHeading: "投资助手仪表盘",
+          appSubtitle: "FastAPI + Vanilla JS + Tailwind CDN",
+          languageSelectorLabel: "选择语言",
+          navDashboard: "仪表盘",
+          navPortfolio: "投资组合",
+          navWatchlist: "观察列表",
+          latestDailyLabel: "最新每日报告日期",
+          latestWeeklyLabel: "最新周报周次",
+          runDaily: "运行每日报告",
+          runWeekly: "运行周报",
+          dailyListTitle: "每日报告列表",
+          weeklyListTitle: "周报列表",
+          viewerTabDaily: "每日",
+          viewerTabWeekly: "每周",
+          reportSelectLabel: "选择报告",
+          portfolioTitle: "投资组合",
+          watchlistTitle: "观察列表",
+          addItemButton: "+ 添加项目",
+          summaryLoading: "正在加载摘要...",
+          tableTicker: "Ticker",
+          tableCompanyName: "公司名称",
+          tableMarket: "市场",
+          tableQuantity: "数量",
+          tableAvgCost: "平均成本",
+          tableCurrency: "货币",
+          tableWeight: "权重",
+          tableStatus: "状态",
+          tableActions: "操作",
+          portfolioSelectWatchlistLabel: "从观察列表选择（可选）",
+          portfolioSelectWatchlistPlaceholder: "— 从观察列表选择后将自动填充 —",
+          labelTickerRequired: "Ticker *",
+          labelCompanyRequired: "公司名称 *",
+          labelMarket: "市场",
+          labelHoldingStatus: "状态",
+          holdingStatusActive: "持有中",
+          holdingStatusCash: "现金",
+          labelQuantity: "数量",
+          labelAvgCost: "平均成本",
+          labelCurrency: "货币",
+          labelTargetWeight: "目标权重",
+          labelPriority: "优先级 (1-5)",
+          labelThesis: "投资逻辑",
+          labelRiskNotes: "风险备注",
+          labelIdealEntry: "目标买入价",
+          labelWatchReason: "关注原因",
+          labelTriggerCondition: "触发条件",
+          labelInvalidation: "失效条件",
+          placeholderThesis: "请输入投资逻辑",
+          placeholderRiskNotes: "请输入风险备注",
+          placeholderWatchReason: "请输入关注原因",
+          placeholderTriggerCondition: "请输入触发条件",
+          placeholderInvalidation: "请输入失效条件",
+          placeholderRiskItem: "风险因素",
+          buttonSave: "保存",
+          buttonCancel: "取消",
+          genericRequestError: "处理请求时发生错误。",
+          labelHoldingsCount: "持仓数量",
+          labelCostTotal: "成本合计",
+          labelMarketValue: "市值",
+          labelProfit: "盈亏",
+          labelReturnRate: "收益率",
+          summaryLoadFailed: "无法加载摘要。({error})",
+          totalSummaryKrw: "整体摘要（KRW基准）",
+          domestic: "国内",
+          overseas: "海外",
+          exchangeRate: "汇率",
+          noReports: "没有报告。",
+          noSelectableReports: "没有可选择的报告",
+          viewerMetaDaily: "每日报告: {value}",
+          viewerMetaWeekly: "周报: {value}",
+          autofillDone: "已自动填写基本信息。",
+          autofillFailed: "自动填写失败: {error}",
+          watchlistIdealEntryEmpty: "目标买入价为空。请先自动填写或手动输入。",
+          watchlistIdealEntryInvalid: "目标买入价格式无效。",
+          priorityInvalid: "优先级格式无效。",
+          portfolioValidationError: "数量/优先级必须为整数，平均成本/目标权重必须为数字。",
+          portfolioUpdated: "投资组合已更新",
+          portfolioAdded: "已添加到投资组合",
+          portfolioDeleted: "已从投资组合删除",
+          watchlistUpdated: "观察列表已更新",
+          watchlistAdded: "已添加到观察列表",
+          watchlistDeleted: "已从观察列表删除",
+          deleteConfirm: "要删除 {ticker} 吗？",
+          loading: "加载中...",
+          noData: "没有数据。",
+          edit: "编辑",
+          delete: "删除",
+          currencyBadgeKRW: "(KRW)",
+          currencyBadgeUSD: "(USD)",
+          coreHypothesis: "核心逻辑",
+          newsSummary: "新闻摘要",
+          entryObservation: "入场观察点",
+          invalidationCondition: "失效条件",
+          defaultThesis: "在确认 {name} 盈利与动能改善的同时，考虑分批建仓。",
+          portfolioAutofillDone: "已根据观察列表自动填写 {ticker} 信息。",
+          modalAddTitle: "添加项目",
+          modalEditTitle: "编辑项目",
+          modalAutofillingSuffix: "（自动填写中...）",
+          watchReasonCard: "关注原因",
+          idealEntryCard: "目标买入价",
+          triggerConditionCard: "触发条件",
+          invalidationCard: "失效条件",
+          riskItemCard: "风险因素",
+          runDailyDone: "已开始生成报告。",
+          runWeeklyDone: "已开始生成周报。",
+        },
+        fr: {
+          appTitle: "Application Web Assistant d'investissement",
+          appHeading: "Tableau de bord de l'assistant d'investissement",
+          appSubtitle: "FastAPI + Vanilla JS + Tailwind CDN",
+          languageSelectorLabel: "Choisir la langue",
+          navDashboard: "Tableau de bord",
+          navPortfolio: "Portefeuille",
+          navWatchlist: "Liste de suivi",
+          latestDailyLabel: "Date du dernier briefing quotidien",
+          latestWeeklyLabel: "Semaine du dernier rapport hebdomadaire",
+          runDaily: "Lancer le briefing quotidien",
+          runWeekly: "Lancer le rapport hebdomadaire",
+          dailyListTitle: "Briefings quotidiens",
+          weeklyListTitle: "Rapports hebdomadaires",
+          viewerTabDaily: "Quotidien",
+          viewerTabWeekly: "Hebdomadaire",
+          reportSelectLabel: "Sélectionner un rapport",
+          portfolioTitle: "Portefeuille",
+          watchlistTitle: "Liste de suivi",
+          addItemButton: "+ Ajouter",
+          summaryLoading: "Chargement du résumé...",
+          tableTicker: "Ticker",
+          tableCompanyName: "Société",
+          tableMarket: "Marché",
+          tableQuantity: "Quantité",
+          tableAvgCost: "Prix moyen",
+          tableCurrency: "Devise",
+          tableWeight: "Poids",
+          tableStatus: "Statut",
+          tableActions: "Actions",
+          portfolioSelectWatchlistLabel: "Sélectionner depuis la liste de suivi (optionnel)",
+          portfolioSelectWatchlistPlaceholder: "— Sélectionnez depuis la liste de suivi pour remplir automatiquement —",
+          labelTickerRequired: "Ticker *",
+          labelCompanyRequired: "Nom de la société *",
+          labelMarket: "Marché",
+          labelHoldingStatus: "Statut",
+          holdingStatusActive: "Actif",
+          holdingStatusCash: "Cash",
+          labelQuantity: "Quantité",
+          labelAvgCost: "Prix moyen",
+          labelCurrency: "Devise",
+          labelTargetWeight: "Poids cible",
+          labelPriority: "Priorité (1-5)",
+          labelThesis: "Thèse d'investissement",
+          labelRiskNotes: "Notes de risque",
+          labelIdealEntry: "Prix d'entrée cible",
+          labelWatchReason: "Raison de suivi",
+          labelTriggerCondition: "Condition de déclenchement",
+          labelInvalidation: "Condition d'invalidation",
+          placeholderThesis: "Saisissez la thèse d'investissement",
+          placeholderRiskNotes: "Saisissez les notes de risque",
+          placeholderWatchReason: "Saisissez la raison de suivi",
+          placeholderTriggerCondition: "Saisissez la condition de déclenchement",
+          placeholderInvalidation: "Saisissez la condition d'invalidation",
+          placeholderRiskItem: "Facteurs de risque",
+          buttonSave: "Enregistrer",
+          buttonCancel: "Annuler",
+          genericRequestError: "Une erreur s'est produite lors du traitement de la requête.",
+          labelHoldingsCount: "Nombre de lignes",
+          labelCostTotal: "Coût total",
+          labelMarketValue: "Valeur de marché",
+          labelProfit: "Gain / perte",
+          labelReturnRate: "Rendement",
+          summaryLoadFailed: "Impossible de charger le résumé. ({error})",
+          totalSummaryKrw: "Résumé global (base KRW)",
+          domestic: "Domestique",
+          overseas: "International",
+          exchangeRate: "Taux de change",
+          noReports: "Aucun rapport disponible.",
+          noSelectableReports: "Aucun rapport disponible à sélectionner",
+          viewerMetaDaily: "Briefing quotidien : {value}",
+          viewerMetaWeekly: "Rapport hebdomadaire : {value}",
+          autofillDone: "Les informations de base ont été remplies automatiquement.",
+          autofillFailed: "Échec du remplissage automatique : {error}",
+          watchlistIdealEntryEmpty: "Le prix d'entrée cible est vide. Utilisez le remplissage automatique ou saisissez-le manuellement.",
+          watchlistIdealEntryInvalid: "Le format du prix d'entrée cible est invalide.",
+          priorityInvalid: "Le format de la priorité est invalide.",
+          portfolioValidationError: "Quantité/Priorité doivent être des entiers, et prix moyen/poids cible doivent être numériques.",
+          portfolioUpdated: "Portefeuille mis à jour",
+          portfolioAdded: "Élément ajouté au portefeuille",
+          portfolioDeleted: "Élément supprimé du portefeuille",
+          watchlistUpdated: "Liste de suivi mise à jour",
+          watchlistAdded: "Élément ajouté à la liste de suivi",
+          watchlistDeleted: "Élément supprimé de la liste de suivi",
+          deleteConfirm: "Supprimer {ticker} ?",
+          loading: "Chargement...",
+          noData: "Aucune donnée disponible.",
+          edit: "Modifier",
+          delete: "Supprimer",
+          currencyBadgeKRW: "(KRW)",
+          currencyBadgeUSD: "(USD)",
+          coreHypothesis: "Hypothèse centrale",
+          newsSummary: "Résumé des actualités",
+          entryObservation: "Point d'observation d'entrée",
+          invalidationCondition: "Condition d'invalidation",
+          defaultThesis: "Évaluer une entrée progressive pour {name} à mesure que les résultats et la dynamique s'améliorent.",
+          portfolioAutofillDone: "Les informations de {ticker} ont été remplies automatiquement depuis la liste de suivi.",
+          modalAddTitle: "Ajouter un élément",
+          modalEditTitle: "Modifier l'élément",
+          modalAutofillingSuffix: "(Remplissage automatique...)",
+          watchReasonCard: "Raison de suivi",
+          idealEntryCard: "Prix d'entrée cible",
+          triggerConditionCard: "Condition de déclenchement",
+          invalidationCard: "Condition d'invalidation",
+          riskItemCard: "Facteurs de risque",
+          runDailyDone: "La génération du briefing a démarré.",
+          runWeeklyDone: "La génération du rapport hebdomadaire a démarré.",
+        },
+      };
+
       const state = {
+        language: "ko",
         currentTab: "dashboard",
         viewerType: "daily",
         dailyReports: [],
@@ -423,11 +989,106 @@
       const viewer = document.getElementById("viewer");
       const viewerMeta = document.getElementById("viewerMeta");
       const toast = document.getElementById("toast");
+      const languageSelect = document.getElementById("languageSelect");
 
       const portfolioModal = document.getElementById("portfolioModal");
       const portfolioForm = document.getElementById("portfolioForm");
       const watchlistModal = document.getElementById("watchlistModal");
       const watchlistForm = document.getElementById("watchlistForm");
+
+      function normalizeLanguage(language) {
+        const normalized = String(language || "").toLowerCase();
+        if (!normalized) return "ko";
+        if (SUPPORTED_LANGUAGES.includes(normalized)) return normalized;
+        if (normalized.startsWith("zh")) return "zh";
+        if (normalized.startsWith("fr")) return "fr";
+        if (normalized.startsWith("ja")) return "ja";
+        if (normalized.startsWith("en")) return "en";
+        if (normalized.startsWith("ko")) return "ko";
+        return "ko";
+      }
+
+      function getCurrentLocale() {
+        return LOCALE_MAP[state.language] || LOCALE_MAP.ko;
+      }
+
+      function t(key, vars = {}) {
+        const messages = TRANSLATIONS[state.language] || TRANSLATIONS.ko;
+        const fallbackMessages = TRANSLATIONS.ko;
+        const template = messages[key] ?? fallbackMessages[key] ?? key;
+        return Object.entries(vars).reduce((text, [name, value]) => text.replaceAll(`{${name}}`, String(value)), template);
+      }
+
+      function getInitialLanguage() {
+        try {
+          const saved = localStorage.getItem("investAssistLanguage");
+          if (saved) {
+            return normalizeLanguage(saved);
+          }
+        } catch (error) {
+          console.debug("language preference read failed", error);
+        }
+        return normalizeLanguage(navigator.language || navigator.userLanguage || "ko");
+      }
+
+      function getModalBaseTitle(isEdit) {
+        return isEdit ? t("modalEditTitle") : t("modalAddTitle");
+      }
+
+      function syncModalTitles() {
+        const portfolioTitle = document.getElementById("portfolioModalTitle");
+        const watchlistTitle = document.getElementById("watchlistModalTitle");
+        if (portfolioTitle) {
+          portfolioTitle.textContent = getModalBaseTitle(Boolean(state.portfolioEditTicker));
+        }
+        if (watchlistTitle) {
+          const base = getModalBaseTitle(Boolean(state.watchlistEditTicker));
+          watchlistTitle.textContent = state.watchlistAutofillLoading ? `${base} ${t("modalAutofillingSuffix")}` : base;
+        }
+      }
+
+      function applyTranslations() {
+        document.documentElement.lang = state.language;
+        document.title = t("appTitle");
+        languageSelect.value = state.language;
+
+        document.querySelectorAll("[data-i18n]").forEach((element) => {
+          element.textContent = t(element.dataset.i18n);
+        });
+        document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+          element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder));
+        });
+
+        syncModalTitles();
+        setWatchlistCurrencyBadge(document.getElementById("watchlistCurrencyBadge")?.dataset.currency || "", document.getElementById("watchlistCurrencyBadge")?.dataset.market || "");
+      }
+
+      async function refreshCurrentTab() {
+        if (state.currentTab === "dashboard") {
+          await refreshDashboard();
+          return;
+        }
+        if (state.currentTab === "portfolio") {
+          await loadPortfolio();
+          return;
+        }
+        if (state.currentTab === "watchlist") {
+          await loadWatchlist();
+        }
+      }
+
+      async function setLanguage(language, { persist = true } = {}) {
+        state.language = normalizeLanguage(language);
+        if (persist) {
+          try {
+            localStorage.setItem("investAssistLanguage", state.language);
+          } catch (error) {
+            console.debug("language preference write failed", error);
+          }
+        }
+        applyTranslations();
+        await refreshCurrentTab();
+      }
 
       function setPortfolioAutofillButtonsDisabled(disabled) {
         document.getElementById("savePortfolioBtn").disabled = disabled;
@@ -468,7 +1129,7 @@
         if (detail && typeof detail === "object") {
           return detail.message || JSON.stringify(detail);
         }
-        return detail ? String(detail) : "요청 처리 중 오류가 발생했습니다.";
+        return detail ? String(detail) : t("genericRequestError");
       }
 
       async function apiFetch(url, options = {}) {
@@ -492,19 +1153,31 @@
       function formatNumber(value, digits = 0) {
         const num = Number(value || 0);
         if (Number.isNaN(num)) return "0";
-        return num.toFixed(digits).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return new Intl.NumberFormat(getCurrentLocale(), {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        }).format(num);
       }
 
       function formatMoney(currency, value) {
         const currencyCode = String(currency || "").toUpperCase() === "USD" ? "USD" : "KRW";
         const digits = currencyCode === "USD" ? 2 : 0;
-        return `${currencyCode} ${formatNumber(value, digits)}`;
+        return new Intl.NumberFormat(getCurrentLocale(), {
+          style: "currency",
+          currency: currencyCode,
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        }).format(Number(value || 0));
       }
 
       function formatPercent(value) {
         const num = Number(value || 0);
         if (Number.isNaN(num)) return "0.00%";
-        return `${num.toFixed(2)}%`;
+        return new Intl.NumberFormat(getCurrentLocale(), {
+          style: "percent",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(num / 100);
       }
 
       function convertUsdToKrw(usdAmount, exchangeRate = 1300) {
@@ -516,15 +1189,15 @@
           <div class="rounded-xl border border-slate-700 bg-slate-900 p-3">
             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-300">${title}</p>
             <div class="space-y-1 text-xs text-slate-300">
-              <p>보유 종목 수: <strong>${formatNumber(summary.count)}</strong></p>
-              <p>원가 합계 (KRW): <strong>${formatMoney("KRW", summary.cost_krw)}</strong></p>
-              <p>평가 금액 (KRW): <strong>${formatMoney("KRW", summary.market_value_krw)}</strong></p>
-              <p>평가 손익 (KRW): <strong>${formatMoney("KRW", summary.profit_krw)}</strong></p>
-              <p>수익률 (KRW): <strong>${formatPercent(summary.return_rate_krw)}</strong></p>
-              <p>원가 합계 (USD): <strong>${formatMoney("USD", summary.cost_usd)}</strong></p>
-              <p>평가 금액 (USD): <strong>${formatMoney("USD", summary.market_value_usd)}</strong></p>
-              <p>평가 손익 (USD): <strong>${formatMoney("USD", summary.profit_usd)}</strong></p>
-              <p>수익률 (USD): <strong>${formatPercent(summary.return_rate_usd)}</strong></p>
+              <p>${t("labelHoldingsCount")}: <strong>${formatNumber(summary.count)}</strong></p>
+              <p>${t("labelCostTotal")} (KRW): <strong>${formatMoney("KRW", summary.cost_krw)}</strong></p>
+              <p>${t("labelMarketValue")} (KRW): <strong>${formatMoney("KRW", summary.market_value_krw)}</strong></p>
+              <p>${t("labelProfit")} (KRW): <strong>${formatMoney("KRW", summary.profit_krw)}</strong></p>
+              <p>${t("labelReturnRate")} (KRW): <strong>${formatPercent(summary.return_rate_krw)}</strong></p>
+              <p>${t("labelCostTotal")} (USD): <strong>${formatMoney("USD", summary.cost_usd)}</strong></p>
+              <p>${t("labelMarketValue")} (USD): <strong>${formatMoney("USD", summary.market_value_usd)}</strong></p>
+              <p>${t("labelProfit")} (USD): <strong>${formatMoney("USD", summary.profit_usd)}</strong></p>
+              <p>${t("labelReturnRate")} (USD): <strong>${formatPercent(summary.return_rate_usd)}</strong></p>
             </div>
           </div>
         `;
@@ -537,7 +1210,7 @@
         if (!summary && errorMessage) {
           summaryContainer.innerHTML = `
             <div class="rounded-xl border border-red-500/40 bg-red-900/20 p-3 text-sm text-red-200 lg:col-span-3">
-              요약 정보를 불러올 수 없습니다. (${errorMessage})
+              ${t("summaryLoadFailed", { error: errorMessage })}
             </div>
           `;
           return;
@@ -587,22 +1260,22 @@
 
         const totalCard = `
           <div class="rounded-xl border border-slate-700 bg-slate-900 p-3">
-            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-300">전체 요약 (원화 기준)</p>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-300">${t("totalSummaryKrw")}</p>
             <div class="space-y-1 text-xs text-slate-300">
-              <p>보유 종목 수: <strong>${formatNumber(safeSummary.total_count)}</strong> (국내: ${formatNumber(safeSummary.domestic_count)}, 해외: ${formatNumber(safeSummary.overseas_count)})</p>
-              <p>환율: <strong>${formatNumber(exchangeRate, 2)} (USD/KRW)</strong></p>
-              <p>원가 합계: <strong>${formatMoney("KRW", totalCostKrwConv)}</strong></p>
-              <p>평가 금액: <strong>${formatMoney("KRW", totalMarketValueKrwConv)}</strong></p>
-              <p>평가 손익: <strong>${formatMoney("KRW", totalProfitKrwConv)}</strong></p>
-              <p>수익률: <strong>${formatPercent(totalReturnRateKrwConv)}</strong></p>
+              <p>${t("labelHoldingsCount")}: <strong>${formatNumber(safeSummary.total_count)}</strong> (${t("domestic")}: ${formatNumber(safeSummary.domestic_count)}, ${t("overseas")}: ${formatNumber(safeSummary.overseas_count)})</p>
+              <p>${t("exchangeRate")}: <strong>${formatNumber(exchangeRate, 2)} (USD/KRW)</strong></p>
+              <p>${t("labelCostTotal")}: <strong>${formatMoney("KRW", totalCostKrwConv)}</strong></p>
+              <p>${t("labelMarketValue")}: <strong>${formatMoney("KRW", totalMarketValueKrwConv)}</strong></p>
+              <p>${t("labelProfit")}: <strong>${formatMoney("KRW", totalProfitKrwConv)}</strong></p>
+              <p>${t("labelReturnRate")}: <strong>${formatPercent(totalReturnRateKrwConv)}</strong></p>
             </div>
           </div>
         `;
 
         summaryContainer.innerHTML = [
           totalCard,
-          summaryRegionCard("국내", safeSummary.domestic),
-          summaryRegionCard("해외", safeSummary.overseas),
+          summaryRegionCard(t("domestic"), safeSummary.domestic),
+          summaryRegionCard(t("overseas"), safeSummary.overseas),
         ].join("");
       }
 
@@ -635,7 +1308,7 @@
         ul.innerHTML = "";
 
         if (!list.length) {
-          ul.innerHTML = '<li class="text-sm text-slate-500">리포트가 없습니다.</li>';
+          ul.innerHTML = `<li class="text-sm text-slate-500">${t("noReports")}</li>`;
           return;
         }
 
@@ -663,8 +1336,8 @@
 
         reportSelect.innerHTML = "";
         if (!source.length) {
-          reportSelect.innerHTML = '<option value="">선택 가능한 리포트가 없습니다</option>';
-          viewer.innerHTML = '<p class="text-slate-500">리포트가 없습니다.</p>';
+          reportSelect.innerHTML = `<option value="">${t("noSelectableReports")}</option>`;
+          viewer.innerHTML = `<p class="text-slate-500">${t("noReports")}</p>`;
           viewerMeta.textContent = "";
           return;
         }
@@ -706,7 +1379,7 @@
             .replace(/\bwatchlist\b/g, "관심종목");
           viewer.innerHTML = DOMPurify.sanitize(marked.parse(localizedContent));
           colorizeArrows(viewer);
-          viewerMeta.textContent = type === "daily" ? `일일 브리핑: ${data.date}` : `주간 리포트: ${data.week}`;
+          viewerMeta.textContent = type === "daily" ? t("viewerMetaDaily", { value: data.date }) : t("viewerMetaWeekly", { value: data.week });
         } catch (error) {
           viewer.innerHTML = `<p class="text-red-400">${error.message}</p>`;
           viewerMeta.textContent = "";
@@ -735,7 +1408,7 @@
         }
       }
 
-      async function runBriefing(buttonId, spinnerId, doneMessage) {
+      async function runBriefing(buttonId, spinnerId, doneMessageKey) {
         const button = document.getElementById(buttonId);
         const spinner = document.getElementById(spinnerId);
 
@@ -743,7 +1416,7 @@
         spinner.classList.remove("hidden");
         try {
           await apiFetch("/api/run-briefing", { method: "POST" });
-          showToast(doneMessage);
+          showToast(t(doneMessageKey));
           await refreshDashboard();
         } catch (error) {
           showToast(error.message, true);
@@ -763,7 +1436,7 @@
           ]);
           
           const portfolioTickers = new Set(portfolioRows.map(row => row.ticker));
-          select.innerHTML = '<option value="">— 관심종목에서 선택하면 자동 채워집니다 —</option>';
+          select.innerHTML = `<option value="">${t("portfolioSelectWatchlistPlaceholder")}</option>`;
           
           watchlistRows.forEach((row) => {
             if (!portfolioTickers.has(row.ticker)) {
@@ -780,7 +1453,7 @@
             }
           });
         } catch (error) {
-          console.error("관심종목 로드 실패:", error);
+          console.error("watchlist load failed:", error);
         }
       }
 
@@ -815,30 +1488,30 @@
 
           const thesisParts = [];
           if (watchReason) {
-            thesisParts.push(`핵심 가설: ${watchReason}`);
+            thesisParts.push(`${t("coreHypothesis")}: ${watchReason}`);
           }
 
           try {
             const enriched = await apiFetch(`/api/watchlist/enrich?ticker=${encodeURIComponent(ticker)}`);
             if (enriched.news_summary) {
-              thesisParts.push(`뉴스 요약: ${enriched.news_summary}`);
+              thesisParts.push(`${t("newsSummary")}: ${enriched.news_summary}`);
             }
             if (enriched.trigger_condition) {
-              thesisParts.push(`진입 관찰 포인트: ${enriched.trigger_condition}`);
+              thesisParts.push(`${t("entryObservation")}: ${enriched.trigger_condition}`);
             }
             if (enriched.invalidation) {
-              thesisParts.push(`무효화 조건: ${enriched.invalidation}`);
+              thesisParts.push(`${t("invalidationCondition")}: ${enriched.invalidation}`);
             }
           } catch (error) {
             // enrich 실패 시 기본 가설 문구로 계속 진행
           }
 
           if (!thesisParts.length) {
-            thesisParts.push(`${companyName || ticker}의 실적/모멘텀 개선을 확인하며 분할 진입을 검토한다.`);
+            thesisParts.push(t("defaultThesis", { name: companyName || ticker }));
           }
           thesisField.value = thesisParts.join(" | ");
 
-          showToast(`${ticker} 정보가 자동으로 채워졌습니다 (관심종목 기반).`);
+          showToast(t("portfolioAutofillDone", { ticker }));
         } finally {
           state.portfolioAutofillLoading = false;
           setPortfolioAutofillButtonsDisabled(false);
@@ -846,7 +1519,7 @@
       }
       function openPortfolioModal(ticker = null) {
         state.portfolioEditTicker = ticker;
-        document.getElementById("portfolioModalTitle").textContent = ticker ? "종목 수정" : "종목 추가";
+        syncModalTitles();
         
         if (ticker) {
           const rows = document.querySelectorAll("#portfolioRows tr");
@@ -898,7 +1571,7 @@
         const priority = Number(document.getElementById("portfolioPriority").value);
 
         if (!Number.isInteger(quantity) || !Number.isInteger(priority) || Number.isNaN(avgCost) || Number.isNaN(targetWeight)) {
-          showToast("수량/우선순위는 정수, 평단가/목표 비중은 숫자로 입력해 주세요.", true);
+          showToast(t("portfolioValidationError"), true);
           return;
         }
 
@@ -923,14 +1596,14 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(body),
             });
-            showToast("포트폴리오 수정 완료");
+            showToast(t("portfolioUpdated"));
           } else {
             await apiFetch("/api/portfolio", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(body),
             });
-            showToast("포트폴리오 추가 완료");
+            showToast(t("portfolioAdded"));
           }
           closePortfolioModal();
           await loadPortfolio();
@@ -940,10 +1613,10 @@
       }
 
       async function deletePortfolio(ticker) {
-        if (!confirm(`${ticker}을(를) 삭제하시겠습니까?`)) return;
+        if (!confirm(t("deleteConfirm", { ticker }))) return;
         try {
           await apiFetch(`/api/portfolio/${ticker}`, { method: "DELETE" });
-          showToast("포트폴리오 삭제 완료");
+          showToast(t("portfolioDeleted"));
           await loadPortfolio();
         } catch (error) {
           showToast(error.message, true);
@@ -954,9 +1627,9 @@
         const tbody = document.getElementById("portfolioRows");
         const summaryContainer = document.getElementById("portfolioSummary");
         if (summaryContainer) {
-          summaryContainer.innerHTML = '<div class="rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm text-slate-300 lg:col-span-3">요약 로딩 중...</div>';
+          summaryContainer.innerHTML = `<div class="rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm text-slate-300 lg:col-span-3">${t("summaryLoading")}</div>`;
         }
-        tbody.innerHTML = '<tr><td colspan="9" class="px-3 py-3 text-slate-400">로딩 중...</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="9" class="px-3 py-3 text-slate-400">${t("loading")}</td></tr>`;
 
         let summaryData = null;
         let summaryError = "";
@@ -976,7 +1649,7 @@
           renderPortfolioSummary(summaryData, summaryError);
 
           if (!rows.length) {
-            tbody.innerHTML = '<tr><td colspan="9" class="px-3 py-3 text-slate-500">데이터가 없습니다.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="9" class="px-3 py-3 text-slate-500">${t("noData")}</td></tr>`;
             return;
           }
 
@@ -993,8 +1666,8 @@
                   <td class="px-3 py-2">${row.target_weight || ""}</td>
                   <td class="px-3 py-2">${row.holding_status || ""}</td>
                   <td class="px-3 py-2 text-center space-x-1">
-                    <button onclick="openPortfolioModal('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-amber-500/20 hover:text-amber-300">수정</button>
-                    <button onclick="deletePortfolio('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-red-500/20 hover:text-red-300">삭제</button>
+                    <button onclick="openPortfolioModal('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-amber-500/20 hover:text-amber-300">${t("edit")}</button>
+                    <button onclick="deletePortfolio('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-red-500/20 hover:text-red-300">${t("delete")}</button>
                   </td>
                 </tr>
               `,
@@ -1015,10 +1688,12 @@
         const badge = document.getElementById("watchlistCurrencyBadge");
         if (!badge) return;
         const cur = String(currency || "").toUpperCase();
+        badge.dataset.currency = cur;
+        badge.dataset.market = String(market || "").toUpperCase();
         if (cur === "KRW" || market === "KRX") {
-          badge.textContent = "(원화 KRW)";
+          badge.textContent = t("currencyBadgeKRW");
         } else if (cur === "USD" || market === "NASDAQ" || market === "NYSE" || market === "US") {
-          badge.textContent = "(달러 USD)";
+          badge.textContent = t("currencyBadgeUSD");
         } else {
           badge.textContent = "";
         }
@@ -1046,12 +1721,12 @@
         const title = document.getElementById("watchlistModalTitle");
         const tickerField = document.getElementById("watchlistTicker");
         const companyField = document.getElementById("watchlistCompanyName");
-        const originalTitle = "종목 추가";
+        const originalTitle = getModalBaseTitle(false);
 
         try {
           state.watchlistAutofillLoading = true;
           setWatchlistAutofillButtonsDisabled(true);
-          title.textContent = `${originalTitle} (자동 채움 중...)`;
+          title.textContent = `${originalTitle} ${t("modalAutofillingSuffix")}`;
           tickerField.disabled = true;
           companyField.disabled = true;
 
@@ -1077,9 +1752,9 @@
 
           setWatchlistCurrencyBadge(enriched.currency, enriched.market);
 
-          showToast("기본 정보를 자동으로 채웠습니다.");
+          showToast(t("autofillDone"));
         } catch (error) {
-          showToast(`자동 채움 실패: ${error.message}`, true);
+          showToast(t("autofillFailed", { error: error.message }), true);
         } finally {
           state.watchlistAutofillLoading = false;
           setWatchlistAutofillButtonsDisabled(false);
@@ -1091,7 +1766,7 @@
 
       function openWatchlistModal(ticker = null) {
         state.watchlistEditTicker = ticker;
-        document.getElementById("watchlistModalTitle").textContent = ticker ? "종목 수정" : "종목 추가";
+        syncModalTitles();
         
         if (ticker) {
           fetch(`/api/watchlist`)
@@ -1143,19 +1818,19 @@
         const priorityRaw = document.getElementById("watchlistPriority").value;
 
         if (isBlank(idealEntryRaw)) {
-          showToast("진입가가 비어 있습니다. 자동채움 후 저장하거나 직접 입력해 주세요.", true);
+          showToast(t("watchlistIdealEntryEmpty"), true);
           return;
         }
 
         const idealEntry = Number(idealEntryRaw);
         if (Number.isNaN(idealEntry)) {
-          showToast("진입가 형식이 올바르지 않습니다.", true);
+          showToast(t("watchlistIdealEntryInvalid"), true);
           return;
         }
 
         const priority = Number(priorityRaw || 3);
         if (Number.isNaN(priority)) {
-          showToast("우선순위 형식이 올바르지 않습니다.", true);
+          showToast(t("priorityInvalid"), true);
           return;
         }
 
@@ -1178,14 +1853,14 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(body),
             });
-            showToast("관심종목 수정 완료");
+            showToast(t("watchlistUpdated"));
           } else {
             await apiFetch("/api/watchlist", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(body),
             });
-            showToast("관심종목 추가 완료");
+            showToast(t("watchlistAdded"));
           }
           closeWatchlistModal();
           await loadWatchlist();
@@ -1195,10 +1870,10 @@
       }
 
       async function deleteWatchlist(ticker) {
-        if (!confirm(`${ticker}을(를) 삭제하시겠습니까?`)) return;
+        if (!confirm(t("deleteConfirm", { ticker }))) return;
         try {
           await apiFetch(`/api/watchlist/${ticker}`, { method: "DELETE" });
-          showToast("관심종목 삭제 완료");
+          showToast(t("watchlistDeleted"));
           await loadWatchlist();
         } catch (error) {
           showToast(error.message, true);
@@ -1212,7 +1887,7 @@
         try {
           const rows = await apiFetch("/api/watchlist");
           if (!rows.length) {
-            grid.innerHTML = '<div class="col-span-2 text-center text-slate-500 py-4">데이터가 없습니다.</div>';
+            grid.innerHTML = `<div class="col-span-2 text-center text-slate-500 py-4">${t("noData")}</div>`;
             return;
           }
 
@@ -1232,8 +1907,8 @@
                         <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded">${priorityLabel}</span>
                       </div>
                       <div class="flex gap-1">
-                        <button onclick="openWatchlistModal('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-amber-500/20 hover:text-amber-300">수정</button>
-                        <button onclick="deleteWatchlist('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-red-500/20 hover:text-red-300">삭제</button>
+                        <button onclick="openWatchlistModal('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-amber-500/20 hover:text-amber-300">${t("edit")}</button>
+                        <button onclick="deleteWatchlist('${row.ticker}')" class="rounded px-2 py-1 text-xs text-slate-300 hover:bg-red-500/20 hover:text-red-300">${t("delete")}</button>
                       </div>
                     </div>
                     
@@ -1243,25 +1918,25 @@
                     <!-- 세부 정보 -->
                     <div class="space-y-2 text-xs text-slate-300">
                       <div>
-                        <p class="text-slate-500 text-xs mb-0.5">관심이유</p>
+                        <p class="text-slate-500 text-xs mb-0.5">${t("watchReasonCard")}</p>
                         <p class="text-sm">${row.watch_reason || "-"}</p>
                       </div>
                       <div class="grid grid-cols-2 gap-2">
                         <div>
-                          <p class="text-slate-500 text-xs mb-0.5">진입 목표가</p>
+                          <p class="text-slate-500 text-xs mb-0.5">${t("idealEntryCard")}</p>
                           <p class="font-semibold text-amber-300">${formatNumber(row.ideal_entry, 2)}</p>
                         </div>
                         <div>
-                          <p class="text-slate-500 text-xs mb-0.5">진입 조건</p>
+                          <p class="text-slate-500 text-xs mb-0.5">${t("triggerConditionCard")}</p>
                           <p class="text-sm">${triggerCondition}</p>
                         </div>
                       </div>
                       <div>
-                        <p class="text-slate-500 text-xs mb-0.5">무효 조건</p>
+                        <p class="text-slate-500 text-xs mb-0.5">${t("invalidationCard")}</p>
                         <p class="text-sm">${invalidation}</p>
                       </div>
                       <div>
-                        <p class="text-slate-500 text-xs mb-0.5">위험 요소</p>
+                        <p class="text-slate-500 text-xs mb-0.5">${t("riskItemCard")}</p>
                         <p class="text-sm">${row.risk_notes || "-"}</p>
                       </div>
                     </div>
@@ -1302,11 +1977,15 @@
       });
 
       document.getElementById("runDailyBtn").addEventListener("click", () => {
-        runBriefing("runDailyBtn", "runDailySpinner", "브리핑 생성을 시작했습니다.");
+        runBriefing("runDailyBtn", "runDailySpinner", "runDailyDone");
       });
 
       document.getElementById("runWeeklyBtn").addEventListener("click", () => {
-        runBriefing("runWeeklyBtn", "runWeeklySpinner", "주간 리포트 생성을 시작했습니다.");
+        runBriefing("runWeeklyBtn", "runWeeklySpinner", "runWeeklyDone");
+      });
+
+      languageSelect.addEventListener("change", async (event) => {
+        await setLanguage(event.target.value);
       });
 
       document.getElementById("addPortfolioBtn").addEventListener("click", () => openPortfolioModal());
@@ -1339,6 +2018,8 @@
         if (e.key === "Escape" && watchlistModal.classList.contains("active") && !state.watchlistAutofillLoading) closeWatchlistModal();
       });
 
+      state.language = getInitialLanguage();
+      applyTranslations();
       setMainTab("dashboard");
       setViewerTab("daily");
       refreshDashboard();
