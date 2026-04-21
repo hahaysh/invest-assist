@@ -191,11 +191,11 @@
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <article class="rounded-2xl border border-slate-700 p-4" style="background-color: var(--card)">
               <h2 class="mb-3 text-lg font-semibold" data-i18n="dailyListTitle">일일 브리핑 목록</h2>
-              <select id="dailyList" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100"></select>
+              <select id="dailyList" title="일일 브리핑 목록" aria-label="일일 브리핑 목록" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100"></select>
             </article>
             <article class="rounded-2xl border border-slate-700 p-4" style="background-color: var(--card)">
               <h2 class="mb-3 text-lg font-semibold" data-i18n="weeklyListTitle">주간 리포트 목록</h2>
-              <select id="weeklyList" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100"></select>
+              <select id="weeklyList" title="주간 리포트 목록" aria-label="주간 리포트 목록" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100"></select>
             </article>
           </div>
 
@@ -982,6 +982,9 @@
         viewerType: "daily",
         dailyReports: [],
         weeklyReports: [],
+        tickerMarketMap: {},
+        tickerMarketMapLoaded: false,
+        tickerMarketMapPromise: null,
         portfolioEditTicker: null,
         portfolioAutofillLoading: false,
         watchlistEditTicker: null,
@@ -1156,6 +1159,160 @@
         return `https://finance.yahoo.com/quote/${t}`;
       }
 
+      function normalizeTicker(ticker) {
+        return String(ticker || "").trim().toUpperCase();
+      }
+
+      function upsertTickerMarket(ticker, market) {
+        const normalizedTicker = normalizeTicker(ticker);
+        const normalizedMarket = String(market || "").trim().toUpperCase();
+        if (!normalizedTicker || !normalizedMarket) {
+          return;
+        }
+
+        state.tickerMarketMap[normalizedTicker] = normalizedMarket;
+
+        if (normalizedMarket === "KRX") {
+          const stripped = normalizedTicker.replace(/\.(KS|KQ)$/, "");
+          if (!stripped) {
+            return;
+          }
+          state.tickerMarketMap[stripped] = "KRX";
+          state.tickerMarketMap[`${stripped}.KS`] = "KRX";
+          state.tickerMarketMap[`${stripped}.KQ`] = "KRX";
+        }
+      }
+
+      function setTickerMarketFromRows(rows = []) {
+        rows.forEach((row) => {
+          upsertTickerMarket(row.ticker, row.market);
+        });
+      }
+
+      function invalidateTickerMarketMap() {
+        state.tickerMarketMap = {};
+        state.tickerMarketMapLoaded = false;
+        state.tickerMarketMapPromise = null;
+      }
+
+      async function primeTickerMarketMap(forceRefresh = false) {
+        if (forceRefresh) {
+          invalidateTickerMarketMap();
+        }
+
+        if (state.tickerMarketMapLoaded) {
+          return state.tickerMarketMap;
+        }
+
+        if (state.tickerMarketMapPromise) {
+          return state.tickerMarketMapPromise;
+        }
+
+        state.tickerMarketMapPromise = Promise.all([
+          apiFetch("/api/portfolio").catch(() => []),
+          apiFetch("/api/watchlist").catch(() => []),
+        ])
+          .then(([portfolioRows, watchlistRows]) => {
+            state.tickerMarketMap = {};
+            setTickerMarketFromRows(portfolioRows);
+            setTickerMarketFromRows(watchlistRows);
+            state.tickerMarketMapLoaded = true;
+            return state.tickerMarketMap;
+          })
+          .finally(() => {
+            state.tickerMarketMapPromise = null;
+          });
+
+        return state.tickerMarketMapPromise;
+      }
+
+      function linkTickerMentions(container) {
+        const tickers = Object.keys(state.tickerMarketMap || {});
+        if (!tickers.length) {
+          return;
+        }
+
+        const escapedTickers = tickers
+          .map((ticker) => ticker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+          .sort((a, b) => b.length - a.length);
+        const tickerRegex = new RegExp(`(^|[^A-Za-z0-9])(${escapedTickers.join("|")})(?=$|[^A-Za-z0-9])`, "gi");
+
+        const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+        const textNodes = [];
+        let current;
+        while ((current = walker.nextNode())) {
+          textNodes.push(current);
+        }
+
+        textNodes.forEach((textNode) => {
+          const parentTag = textNode.parentElement?.tagName;
+          if (!parentTag) {
+            return;
+          }
+
+          if (["A", "CODE", "PRE", "SCRIPT", "STYLE", "TEXTAREA"].includes(parentTag)) {
+            return;
+          }
+
+          const originalText = textNode.nodeValue || "";
+          if (!originalText.trim()) {
+            return;
+          }
+
+          tickerRegex.lastIndex = 0;
+          const fragment = document.createDocumentFragment();
+          let cursor = 0;
+          let hasMatch = false;
+          let match;
+
+          while ((match = tickerRegex.exec(originalText)) !== null) {
+            const leading = match[1] || "";
+            const tickerText = match[2];
+            const tickerStart = match.index + leading.length;
+            const tickerEnd = tickerStart + tickerText.length;
+
+            if (tickerStart < cursor) {
+              continue;
+            }
+
+            if (tickerStart > cursor) {
+              fragment.appendChild(document.createTextNode(originalText.slice(cursor, tickerStart)));
+            }
+
+            const normalized = normalizeTicker(tickerText);
+            const market = state.tickerMarketMap[normalized];
+            if (market) {
+              const link = document.createElement("a");
+              link.href = getTickerLink(tickerText, market);
+              link.target = "_blank";
+              link.rel = "noopener noreferrer";
+              link.className = "font-semibold text-amber-200 underline decoration-amber-400/80 underline-offset-2 transition hover:text-amber-100 hover:decoration-amber-200";
+              link.textContent = tickerText;
+              fragment.appendChild(link);
+              hasMatch = true;
+            } else {
+              fragment.appendChild(document.createTextNode(tickerText));
+            }
+
+            cursor = tickerEnd;
+
+            if (tickerRegex.lastIndex === match.index) {
+              tickerRegex.lastIndex += 1;
+            }
+          }
+
+          if (!hasMatch) {
+            return;
+          }
+
+          if (cursor < originalText.length) {
+            fragment.appendChild(document.createTextNode(originalText.slice(cursor)));
+          }
+
+          textNode.parentNode.replaceChild(fragment, textNode);
+        });
+      }
+
       function formatNumber(value, digits = 0) {
         const num = Number(value || 0);
         if (Number.isNaN(num)) return "0";
@@ -1326,14 +1483,14 @@
           opt.textContent = key;
           sel.appendChild(opt);
         });
-        sel.addEventListener("change", function handler() {
+        sel.onchange = () => {
           const key = sel.value;
           if (!key) return;
           setViewerTab(type);
           reportSelect.value = key;
           loadReport(type, key);
           window.scrollTo({ top: document.body.scrollHeight * 0.2, behavior: "smooth" });
-        });
+        };
       }
 
       function populateReportSelect() {
@@ -1384,6 +1541,8 @@
             .replace(/\bWatchlist\b/g, "관심종목")
             .replace(/\bwatchlist\b/g, "관심종목");
           viewer.innerHTML = DOMPurify.sanitize(marked.parse(localizedContent));
+          await primeTickerMarketMap();
+          linkTickerMentions(viewer);
           colorizeArrows(viewer);
           viewerMeta.textContent = type === "daily" ? t("viewerMetaDaily", { value: data.date }) : t("viewerMetaWeekly", { value: data.week });
         } catch (error) {
@@ -1611,6 +1770,7 @@
             });
             showToast(t("portfolioAdded"));
           }
+          invalidateTickerMarketMap();
           closePortfolioModal();
           await loadPortfolio();
         } catch (error) {
@@ -1623,6 +1783,7 @@
         try {
           await apiFetch(`/api/portfolio/${ticker}`, { method: "DELETE" });
           showToast(t("portfolioDeleted"));
+          invalidateTickerMarketMap();
           await loadPortfolio();
         } catch (error) {
           showToast(error.message, true);
@@ -1645,6 +1806,7 @@
             apiFetch("/api/portfolio"),
             apiFetch("/api/portfolio/summary").catch((error) => ({ __error: error })),
           ]);
+          setTickerMarketFromRows(rows);
 
           if (summaryResult && summaryResult.__error) {
             summaryError = summaryResult.__error.message;
@@ -1869,6 +2031,7 @@
             });
             showToast(t("watchlistAdded"));
           }
+          invalidateTickerMarketMap();
           closeWatchlistModal();
           await loadWatchlist();
         } catch (error) {
@@ -1881,6 +2044,7 @@
         try {
           await apiFetch(`/api/watchlist/${ticker}`, { method: "DELETE" });
           showToast(t("watchlistDeleted"));
+          invalidateTickerMarketMap();
           await loadWatchlist();
         } catch (error) {
           showToast(error.message, true);
@@ -1893,6 +2057,7 @@
 
         try {
           const rows = await apiFetch("/api/watchlist");
+          setTickerMarketFromRows(rows);
           if (!rows.length) {
             grid.innerHTML = `<div class="col-span-2 text-center text-slate-500 py-4">${t("noData")}</div>`;
             return;
