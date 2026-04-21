@@ -191,11 +191,11 @@
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <article class="rounded-2xl border border-slate-700 p-4" style="background-color: var(--card)">
               <h2 class="mb-3 text-lg font-semibold" data-i18n="dailyListTitle">일일 브리핑 목록</h2>
-              <ul id="dailyList" class="space-y-2"></ul>
+              <select id="dailyList" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100"></select>
             </article>
             <article class="rounded-2xl border border-slate-700 p-4" style="background-color: var(--card)">
               <h2 class="mb-3 text-lg font-semibold" data-i18n="weeklyListTitle">주간 리포트 목록</h2>
-              <ul id="weeklyList" class="space-y-2"></ul>
+              <select id="weeklyList" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100"></select>
             </article>
           </div>
 
@@ -499,6 +499,7 @@
           exchangeRate: "환율",
           noReports: "리포트가 없습니다.",
           noSelectableReports: "선택 가능한 리포트가 없습니다",
+          selectReportPlaceholder: "날짜를 선택하세요",
           viewerMetaDaily: "일일 브리핑: {value}",
           viewerMetaWeekly: "주간 리포트: {value}",
           autofillDone: "기본 정보를 자동으로 채웠습니다.",
@@ -607,6 +608,7 @@
           exchangeRate: "Exchange rate",
           noReports: "No reports available.",
           noSelectableReports: "No reports available to select",
+          selectReportPlaceholder: "Select a date",
           viewerMetaDaily: "Daily briefing: {value}",
           viewerMetaWeekly: "Weekly report: {value}",
           autofillDone: "Basic information was autofilled.",
@@ -715,6 +717,7 @@
           exchangeRate: "為替レート",
           noReports: "レポートがありません。",
           noSelectableReports: "選択できるレポートがありません",
+          selectReportPlaceholder: "日付を選択してください",
           viewerMetaDaily: "日次ブリーフィング: {value}",
           viewerMetaWeekly: "週次レポート: {value}",
           autofillDone: "基本情報を自動入力しました。",
@@ -823,6 +826,7 @@
           exchangeRate: "汇率",
           noReports: "没有报告。",
           noSelectableReports: "没有可选择的报告",
+          selectReportPlaceholder: "请选择日期",
           viewerMetaDaily: "每日报告: {value}",
           viewerMetaWeekly: "周报: {value}",
           autofillDone: "已自动填写基本信息。",
@@ -931,6 +935,7 @@
           exchangeRate: "Taux de change",
           noReports: "Aucun rapport disponible.",
           noSelectableReports: "Aucun rapport disponible à sélectionner",
+          selectReportPlaceholder: "Sélectionnez une date",
           viewerMetaDaily: "Briefing quotidien : {value}",
           viewerMetaWeekly: "Rapport hebdomadaire : {value}",
           autofillDone: "Les informations de base ont été remplies automatiquement.",
@@ -1305,29 +1310,29 @@
       }
 
       function renderReportList(targetId, list, type) {
-        const ul = document.getElementById(targetId);
-        ul.innerHTML = "";
+        const sel = document.getElementById(targetId);
+        sel.innerHTML = "";
 
         if (!list.length) {
-          ul.innerHTML = `<li class="text-sm text-slate-500">${t("noReports")}</li>`;
+          sel.innerHTML = `<option value="">${t("noReports")}</option>`;
           return;
         }
 
+        sel.innerHTML = `<option value="">${t("selectReportPlaceholder")}</option>`;
         list.forEach((item) => {
           const key = type === "daily" ? item.date : item.week;
-          const li = document.createElement("li");
-          li.innerHTML = `
-            <button class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-left text-sm hover:border-amber-400 hover:text-amber-300">
-              ${key}
-            </button>
-          `;
-          li.querySelector("button").addEventListener("click", () => {
-            setViewerTab(type);
-            reportSelect.value = key;
-            loadReport(type, key);
-            window.scrollTo({ top: document.body.scrollHeight * 0.2, behavior: "smooth" });
-          });
-          ul.appendChild(li);
+          const opt = document.createElement("option");
+          opt.value = key;
+          opt.textContent = key;
+          sel.appendChild(opt);
+        });
+        sel.addEventListener("change", function handler() {
+          const key = sel.value;
+          if (!key) return;
+          setViewerTab(type);
+          reportSelect.value = key;
+          loadReport(type, key);
+          window.scrollTo({ top: document.body.scrollHeight * 0.2, behavior: "smooth" });
         });
       }
 
@@ -1659,7 +1664,7 @@
               (row) => `
                 <tr class="border-b border-slate-700/50" data-priority="${row.priority}" data-thesis="${row.thesis}" data-risk-notes="${row.risk_notes}">
                   <td class="px-3 py-2 font-semibold"><a href="${getTickerLink(row.ticker, row.market)}" target="_blank" rel="noopener noreferrer" class="text-amber-300 hover:text-amber-100 hover:underline">${row.ticker || ""}</a></td>
-                  <td class="px-3 py-2">${row.company_name || ""}</td>
+                  <td class="px-3 py-2"><a href="${getTickerLink(row.ticker, row.market)}" target="_blank" rel="noopener noreferrer" class="text-white hover:text-amber-100 hover:underline">${row.company_name || ""}</a></td>
                   <td class="px-3 py-2">${row.market || ""}</td>
                   <td class="px-3 py-2">${row.quantity || ""}</td>
                   <td class="px-3 py-2">${row.avg_cost || ""}</td>
