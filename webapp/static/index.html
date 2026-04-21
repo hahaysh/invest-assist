@@ -982,6 +982,7 @@
         viewerType: "daily",
         dailyReports: [],
         weeklyReports: [],
+        reportLoadRequestId: 0,
         tickerMarketMap: {},
         tickerMarketMapLoaded: false,
         tickerMarketMapPromise: null,
@@ -1455,7 +1456,7 @@
         });
       }
 
-      function setViewerTab(type) {
+      function setViewerTab(type, selectedKey = "") {
         state.viewerType = type;
         viewerTabs.forEach((tab) => {
           const active = tab.dataset.viewerTab === type;
@@ -1463,7 +1464,7 @@
           tab.classList.toggle("text-slate-950", active);
           tab.classList.toggle("text-slate-300", !active);
         });
-        populateReportSelect();
+        populateReportSelect(selectedKey);
       }
 
       function renderReportList(targetId, list, type) {
@@ -1486,14 +1487,12 @@
         sel.onchange = () => {
           const key = sel.value;
           if (!key) return;
-          setViewerTab(type);
-          reportSelect.value = key;
-          loadReport(type, key);
+          setViewerTab(type, key);
           window.scrollTo({ top: document.body.scrollHeight * 0.2, behavior: "smooth" });
         };
       }
 
-      function populateReportSelect() {
+      function populateReportSelect(selectedKey = "") {
         const source = state.viewerType === "daily" ? state.dailyReports : state.weeklyReports;
         const keyName = state.viewerType === "daily" ? "date" : "week";
 
@@ -1511,6 +1510,10 @@
           option.textContent = item[keyName];
           reportSelect.appendChild(option);
         });
+
+        if (selectedKey && source.some((item) => item[keyName] === selectedKey)) {
+          reportSelect.value = selectedKey;
+        }
 
         loadReport(state.viewerType, reportSelect.value);
       }
@@ -1532,20 +1535,32 @@
           return;
         }
 
+        const currentRequestId = ++state.reportLoadRequestId;
+
         const endpoint = type === "daily" ? `/api/reports/daily/${key}` : `/api/reports/weekly/${key}`;
 
         try {
           const data = await apiFetch(endpoint);
+          if (currentRequestId !== state.reportLoadRequestId) {
+            return;
+          }
+
           const localizedContent = (data.content || "")
             .replace(/\bThesis\b/g, "투자논리")
             .replace(/\bWatchlist\b/g, "관심종목")
             .replace(/\bwatchlist\b/g, "관심종목");
           viewer.innerHTML = DOMPurify.sanitize(marked.parse(localizedContent));
           await primeTickerMarketMap();
+          if (currentRequestId !== state.reportLoadRequestId) {
+            return;
+          }
           linkTickerMentions(viewer);
           colorizeArrows(viewer);
           viewerMeta.textContent = type === "daily" ? t("viewerMetaDaily", { value: data.date }) : t("viewerMetaWeekly", { value: data.week });
         } catch (error) {
+          if (currentRequestId !== state.reportLoadRequestId) {
+            return;
+          }
           viewer.innerHTML = `<p class="text-red-400">${error.message}</p>`;
           viewerMeta.textContent = "";
         }
